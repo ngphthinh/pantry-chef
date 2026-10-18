@@ -42,24 +42,24 @@ Nhóm đã tiến hành khảo sát phỏng vấn sâu 3 người dùng đại d
 
 ---
 
-## III. MỤC TIÊU VÀ 3 LUỒNG NGƯỜI DÙNG CHÍNH (USER FLOWS)
+    ## III. MỤC TIÊU VÀ 3 LUỒNG NGƯỜI DÙNG CHÍNH (USER FLOWS)
 
-### Luồng 1: Quản lý tủ nguyên liệu (Pantry Management Flow)
-1. **Đầu vào:** Người dùng chụp ảnh nguyên liệu hoặc nhập tên nguyên liệu, chọn phân loại (Rau củ, Thịt, Gia vị...) và ngày hết hạn.
-2. **Xử lý:** Ứng dụng lưu vào cơ sở dữ liệu local/state, tính toán hạn sử dụng.
-3. **Kết quả:** Danh sách nguyên liệu trong tủ lạnh hiển thị trực quan theo nhóm, có trạng thái cảnh báo nguyên liệu sắp hỏng.
+    ### Luồng 1: Quản lý tủ nguyên liệu (Pantry Management Flow)
+    1. **Đầu vào:** Người dùng chụp ảnh nguyên liệu hoặc nhập tên nguyên liệu, chọn phân loại (Rau củ, Thịt, Gia vị...) và ngày hết hạn.
+    2. **Xử lý:** Ứng dụng lưu vào cơ sở dữ liệu local/state, tính toán hạn sử dụng.
+    3. **Kết quả:** Danh sách nguyên liệu trong tủ lạnh hiển thị trực quan theo nhóm, có trạng thái cảnh báo nguyên liệu sắp hỏng.
 
-### Luồng 2: Tìm kiếm & Gợi ý công thức (Recipe Discovery Flow)
-1. **Đầu vào:** Người dùng tích chọn 3–5 nguyên liệu đang có sẵn trong tủ.
-2. **Xử lý:** Gọi API công khai (Spoonacular / TheMealDB) để lọc các công thức chứa các nguyên liệu đó; xử lý phân trang và phân loại theo tỷ lệ khớp nguyên liệu.
-3. **Kết quả:** Hiển thị danh sách các món ăn có thể nấu kèm tỷ lệ đáp ứng nguyên liệu (ví dụ: Khớp 80% - Thiếu 1 nguyên liệu).
+    ### Luồng 2: Tìm kiếm & Gợi ý công thức (Recipe Discovery Flow)
+    1. **Đầu vào:** Người dùng tích chọn 3–5 nguyên liệu đang có sẵn trong tủ.
+    2. **Xử lý:** Gọi API công khai (Spoonacular / TheMealDB) để lọc các công thức chứa các nguyên liệu đó; xử lý phân trang và phân loại theo tỷ lệ khớp nguyên liệu.
+    3. **Kết quả:** Hiển thị danh sách các món ăn có thể nấu kèm tỷ lệ đáp ứng nguyên liệu (ví dụ: Khớp 80% - Thiếu 1 nguyên liệu).
 
-### Luồng 3: Trợ lý AI gợi ý nguyên liệu thay thế (AI Substitute Assistant Flow)
-1. **Đầu vào:** Tại màn hình chi tiết món ăn, người dùng bấm nút "Thiếu nguyên liệu này" (ví dụ: Hết bơ lạt).
-2. **Xử lý:** Gửi prompt kiểm soát tới AI API (OpenAI/Gemini API) xử lý bối cảnh món ăn và nguyên liệu thiếu.
-3. **Kết quả:** AI trả về gợi ý nguyên liệu thay thế tương đương (ví dụ: Thay bơ lạt bằng dầu dừa hoặc dầu thực vật theo tỉ lệ 1:1), kèm **thông báo cảnh báo an toàn dị ứng**.
+    ### Luồng 3: Trợ lý AI gợi ý nguyên liệu thay thế (AI Substitute Assistant Flow)
+    1. **Đầu vào:** Tại màn hình chi tiết món ăn, người dùng bấm nút "Thiếu nguyên liệu này" (ví dụ: Hết bơ lạt).
+    2. **Xử lý:** Gửi prompt kiểm soát tới AI API (OpenAI/Gemini API) xử lý bối cảnh món ăn và nguyên liệu thiếu.
+    3. **Kết quả:** AI trả về gợi ý nguyên liệu thay thế tương đương (ví dụ: Thay bơ lạt bằng dầu dừa hoặc dầu thực vật theo tỉ lệ 1:1), kèm **thông báo cảnh báo an toàn dị ứng**.
 
----
+    ---
 
 ## IV. ÁNH XẠ CHUẨN ĐẦU RA (CLO MAPPING) SƠ BỘ
 
