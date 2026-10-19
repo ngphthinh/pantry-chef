@@ -1,0 +1,158 @@
+package org.group12.feature.auth.service;
+
+import com.nimbusds.jose.*;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import lombok.RequiredArgsConstructor;
+import org.group12.common.exception.AppException;
+import org.group12.common.exception.ErrorCode;
+import org.group12.feature.auth.dto.response.IntrospectResponse;
+import org.group12.feature.auth.entity.User;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.text.ParseException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class JwtService {
+    private final ChangePasswordService changePasswordService;
+    private final TokenBlackListService tokenBlackListService;
+    @Value("${jwt.secret-key}")
+    private String SECRET_KEY;
+
+    @Value("${jwt.expiration}")
+    private long VALID_DURATION;
+
+    @Value("${spring.application.name}")
+    private String ISSUER;
+
+    private static final String SCOPE_CLAIM = "scope";
+    private static final String USERNAME_CLAIM = "username";
+    private final RefreshTokenService refreshTokenService;
+
+
+    public String generateAccessToken(User user) {
+        JWSHeader jwsHeader = new JWSHeader.Builder(JWSAlgorithm.HS512)
+                .type(JOSEObjectType.JWT)
+                .build();
+
+        JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
+                .subject(user.getId().toString())
+                .claim(USERNAME_CLAIM, user.getEmail())
+                .issuer(ISSUER)
+                .issueTime(new Date())
+                .expirationTime(new Date(Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
+                .claim(SCOPE_CLAIM, buildScope(user))
+                .jwtID(UUID.randomUUID().toString())
+                .build();
+
+        Payload payload = new Payload(claimsSet.toJSONObject());
+
+        JWSObject jwsObject = new JWSObject(jwsHeader, payload);
+
+
+        try {
+            jwsObject.sign(new MACSigner(SECRET_KEY.getBytes()));
+            return jwsObject.serialize();
+        } catch (JOSEException e) {
+            throw new AppException(ErrorCode.GENERATE_TOKEN_FAILED);
+        }
+    }
+
+    private String buildScope(User user) {
+        if (user.getRoles() == null) {
+            return "";
+        }
+        return user.getRoles().stream()
+                .map(role -> role.getName().name())
+                .collect(Collectors.joining(" "));
+    }
+
+    public long getExpiration() {
+        return VALID_DURATION;
+    }
+
+    public String generateRefreshToken(User user) {
+        String refreshToken = UUID.randomUUID().toString();
+        refreshTokenService.saveRefreshToken(refreshToken, user.getId().toString());
+        return refreshToken;
+    }
+
+    public IntrospectResponse introspect(String token) {
+
+        try {
+            SignedJWT signedJWT = verifyToken(token);
+            JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
+            return IntrospectResponse.builder()
+                    .active(true)
+                    .scope(claimsSet.getStringClaim(SCOPE_CLAIM))
+                    .clientId(claimsSet.getIssuer())
+                    .userId(claimsSet.getSubject())
+                    .exp(claimsSet.getExpirationTime().getTime() / 1000)
+                    .iat(claimsSet.getIssueTime().getTime() / 1000)
+                    .sub(claimsSet.getSubject())
+                    .build();
+
+        } catch (AppException e) {
+            return IntrospectResponse.builder()
+                    .active(false)
+                    .build();
+        } catch (ParseException e) {
+            throw new AppException(ErrorCode.INTROSPECT_FAILED);
+        }
+
+
+    }
+
+    public SignedJWT verifyToken(String token) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            JWSVerifier verifier = new MACVerifier(SECRET_KEY.getBytes());
+
+            boolean verified = signedJWT.verify(verifier);
+
+            Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+            // Check if the token is valid and not expired
+            if (!(verified && expirationTime.after(new Date()))) {
+                throw new AppException(ErrorCode.INTROSPECT_FAILED);
+            }
+            // Check if blacklisted
+            String jitToken = signedJWT.getJWTClaimsSet().getJWTID();
+            if (tokenBlackListService.isBlacklisted(jitToken)) {
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
+            }
+
+            // Check if the token is invalidated due to password change
+            Date iatTime = signedJWT.getJWTClaimsSet().getIssueTime();
+            String userId = signedJWT.getJWTClaimsSet().getSubject();
+            if (changePasswordService.isTokenInvalidationTimestampExists(userId)) {
+                long changePasswordDate = Long.parseLong(changePasswordService.getTokenInvalidationTimestamp(userId));
+                if (changePasswordDate > iatTime.toInstant().toEpochMilli()) {
+                    throw new AppException(ErrorCode.UNAUTHENTICATED);
+                }
+            }
+            return signedJWT;
+
+
+        } catch (ParseException | JOSEException e) {
+            throw new AppException(ErrorCode.INTROSPECT_FAILED);
+        }
+    }
+
+    public boolean isTokenValid(String token) {
+        try {
+            verifyToken(token);
+            return true;
+        } catch (AppException e) {
+            return false;
+        }
+    }
+}
