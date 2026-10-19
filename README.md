@@ -8,6 +8,8 @@
 - [Quy tắc commit code](docs/tuan02.md)
 - [Tài liệu về cách class](docs/y-nghia-cac-class.md)
 - [Class diagram](docs/class-diagram.puml)
+- [Endpoints](docs/endpoints.md)
+- [Phân công thành viên](docs/phan-cong.md)
 
 Tài liệu này rút ra từ code hiện có (feature `auth` + package `common`) để mọi feature mới (`pantry`, `recipe`,
 `cookbook`, `mealplan`, `shopping`, `ingredient`, `ai`) viết cùng một kiểu.
