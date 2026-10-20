@@ -1,0 +1,15 @@
+meta {
+  name: delete-cuisine
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/v1/cuisines/{{cuisineId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

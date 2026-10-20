@@ -1,0 +1,22 @@
+meta {
+  name: create-cuisine
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/cuisines
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "code": "JAPANESE",
+    "name": "Japanese"
+  }
+}

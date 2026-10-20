@@ -1,0 +1,21 @@
+meta {
+  name: create-shopping-list
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/shopping-lists
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Đi chợ cuối tuần"
+  }
+}

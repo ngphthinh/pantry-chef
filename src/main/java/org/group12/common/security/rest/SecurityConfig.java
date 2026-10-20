@@ -46,6 +46,7 @@ public class SecurityConfig {
      *  CÁC ENDPOINT CỦA <b>GUEST</b> BỎ Ở ĐÂY
      */
     private static final String[] PUBLIC_ENDPOINTS_GET = {
+            "/v1/cuisines",
     };
 
     private static final String[] PUBLIC_ENDPOINTS_HANDSHAKE = {
@@ -87,7 +88,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Spring Security by default adds "SCOPE_" prefix to authorities extracted from JWT. This method removes that prefix.
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
 
@@ -106,15 +106,10 @@ public class SecurityConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
 
-        // Sử dụng setAllowedOrigins để truyền danh sách domain linh hoạt từ cấu hình env
-//        corsConfiguration.setAllowedOrigins(allowedOrigins);
         corsConfiguration.setAllowedOriginPatterns(allowedOrigins);
         corsConfiguration.addAllowedMethod("*");
         corsConfiguration.addAllowedHeader("*");
 
-        // Nếu ở Production bạn cần dùng Cookie hoặc JWT Header ẩn (Credentials), hãy bật dòng dưới:
-        // corsConfiguration.setAllowCredentials(true);
-        // ⚠️ Lưu ý: Nếu setAllowCredentials(true) thì allowedOrigins KHÔNG ĐƯỢC chứa "*"
         corsConfiguration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();

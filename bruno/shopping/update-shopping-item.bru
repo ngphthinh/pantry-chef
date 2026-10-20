@@ -1,0 +1,21 @@
+meta {
+  name: update-shopping-item
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{baseUrl}}/v1/shopping-lists/{{shoppingListId}}/items/{{shoppingItemId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "status": "BOUGHT"
+  }
+}
