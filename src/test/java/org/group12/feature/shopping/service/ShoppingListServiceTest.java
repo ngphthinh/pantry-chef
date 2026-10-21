@@ -73,10 +73,10 @@ class ShoppingListServiceTest {
         User userRef = User.builder().id(USER_ID).build();
         ShoppingListResponse response = ShoppingListResponse.builder().name("Weekend").build();
 
-        when(shoppingListMapper.toEntity(request)).thenReturn(mapped);
+        when(shoppingListMapper.toShoppingList(request)).thenReturn(mapped);
         when(userRepository.getReferenceById(USER_ID)).thenReturn(userRef);
         when(shoppingListRepository.save(any(ShoppingList.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(shoppingListMapper.toResponse(any(ShoppingList.class))).thenReturn(response);
+        when(shoppingListMapper.toShoppingListResponse(any(ShoppingList.class))).thenReturn(response);
 
         ShoppingListResponse result = service.create(request);
 
@@ -98,7 +98,7 @@ class ShoppingListServiceTest {
 
         when(shoppingListRepository.findByUserIdOrderByIdDesc(eq(USER_ID), any(Pageable.class)))
                 .thenReturn(List.of(l1, l2, l3));
-        when(shoppingListMapper.toResponse(any(ShoppingList.class)))
+        when(shoppingListMapper.toShoppingListResponse(any(ShoppingList.class)))
                 .thenAnswer(inv -> ShoppingListResponse.builder()
                         .id(((ShoppingList) inv.getArgument(0)).getId())
                         .build());
@@ -142,9 +142,9 @@ class ShoppingListServiceTest {
 
         when(shoppingListRepository.findByIdAndUserId(LIST_ID, USER_ID)).thenReturn(Optional.of(list));
         when(shoppingItemRepository.findByShoppingListIdOrderByIdAsc(LIST_ID)).thenReturn(List.of(item));
-        when(shoppingListMapper.toDetailResponse(list))
+        when(shoppingListMapper.toShoppingListDetailResponse(list))
                 .thenReturn(ShoppingListDetailResponse.builder().id(LIST_ID).name("Weekend").build());
-        when(shoppingItemMapper.toResponse(item)).thenReturn(itemResponse);
+        when(shoppingItemMapper.toShoppingItemResponse(item)).thenReturn(itemResponse);
 
         ShoppingListDetailResponse result = service.getDetail(LIST_ID);
 
@@ -172,8 +172,8 @@ class ShoppingListServiceTest {
         doAnswer(inv -> {
             ((ShoppingList) inv.getArgument(1)).setName(((ShoppingListUpdateRequest) inv.getArgument(0)).getName());
             return null;
-        }).when(shoppingListMapper).updateEntity(eq(request), eq(list));
-        when(shoppingListMapper.toResponse(list)).thenReturn(response);
+        }).when(shoppingListMapper).updateShoppingListEntity(eq(request), eq(list));
+        when(shoppingListMapper.toShoppingListResponse(list)).thenReturn(response);
 
         ShoppingListResponse result = service.update(LIST_ID, request);
 

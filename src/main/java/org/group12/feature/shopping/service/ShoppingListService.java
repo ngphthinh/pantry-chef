@@ -44,14 +44,14 @@ public class ShoppingListService {
     public ShoppingListResponse create(ShoppingListCreateRequest request) {
         UUID userId = appUtil.userIdFromAuthentication();
 
-        ShoppingList list = shoppingListMapper.toEntity(request);
+        ShoppingList list = shoppingListMapper.toShoppingList(request);
         list.setId(appUtil.generateUUID());
         list.setName(list.getName().trim());
         list.setUser(userRepository.getReferenceById(userId));
 
         list = shoppingListRepository.save(list);
         log.info("User {} created shopping list {}", userId, list.getId());
-        return shoppingListMapper.toResponse(list);
+        return shoppingListMapper.toShoppingListResponse(list);
     }
 
     @PreAuthorize("hasRole('USER')")
@@ -65,7 +65,7 @@ public class ShoppingListService {
                 ? shoppingListRepository.findByUserIdOrderByIdDesc(userId, pageable)
                 : shoppingListRepository.findByUserIdAndIdLessThanOrderByIdDesc(userId, cursor, pageable);
 
-        return appUtil.buildCursorResponse(lists, limit, ShoppingList::getId, shoppingListMapper::toResponse);
+        return appUtil.buildCursorResponse(lists, limit, ShoppingList::getId, shoppingListMapper::toShoppingListResponse);
     }
 
     @PreAuthorize("hasRole('USER')")
@@ -78,9 +78,9 @@ public class ShoppingListService {
     @Transactional
     public ShoppingListResponse update(UUID id, ShoppingListUpdateRequest request) {
         ShoppingList list = getOwnedList(id);
-        shoppingListMapper.updateEntity(request, list);   // dirty checking tự ghi, không cần save()
+        shoppingListMapper.updateShoppingListEntity(request, list);   // dirty checking tự ghi, không cần save()
         list.setName(list.getName().trim());
-        return shoppingListMapper.toResponse(list);
+        return shoppingListMapper.toShoppingListResponse(list);
     }
 
     @PreAuthorize("hasRole('USER')")
@@ -104,10 +104,10 @@ public class ShoppingListService {
     private ShoppingListDetailResponse buildDetail(ShoppingList list) {
         List<ShoppingItemResponse> items = shoppingItemRepository.findByShoppingListIdOrderByIdAsc(list.getId())
                 .stream()
-                .map(shoppingItemMapper::toResponse)
+                .map(shoppingItemMapper::toShoppingItemResponse)
                 .toList();
 
-        ShoppingListDetailResponse detail = shoppingListMapper.toDetailResponse(list);
+        ShoppingListDetailResponse detail = shoppingListMapper.toShoppingListDetailResponse(list);
         detail.setItems(items);
         return detail;
     }

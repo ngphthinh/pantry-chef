@@ -48,7 +48,7 @@ class CuisineServiceTest {
         Cuisine cuisine = Cuisine.builder().id(ID).code("VIETNAMESE").name("Vietnamese").build();
         CuisineResponse response = CuisineResponse.builder().id(ID).code("VIETNAMESE").name("Vietnamese").build();
         when(cuisineRepository.findAllByOrderByNameAsc()).thenReturn(List.of(cuisine));
-        when(cuisineMapper.toResponse(cuisine)).thenReturn(response);
+        when(cuisineMapper.toCuisineResponse(cuisine)).thenReturn(response);
 
         assertThat(service.getAll()).containsExactly(response);
     }
@@ -60,9 +60,9 @@ class CuisineServiceTest {
         CuisineResponse response = CuisineResponse.builder().code("JAPANESE").name("Japanese").build();
 
         when(cuisineRepository.existsByCode("JAPANESE")).thenReturn(false);
-        when(cuisineMapper.toEntity(request)).thenReturn(mapped);
+        when(cuisineMapper.toCuisine(request)).thenReturn(mapped);
         when(cuisineRepository.save(any(Cuisine.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(cuisineMapper.toResponse(any(Cuisine.class))).thenReturn(response);
+        when(cuisineMapper.toCuisineResponse(any(Cuisine.class))).thenReturn(response);
 
         assertThat(service.create(request)).isSameAs(response);
 
@@ -97,7 +97,7 @@ class CuisineServiceTest {
 
         assertThatThrownBy(() -> service.update(ID, new CuisineRequest("ITALIAN", "Italian")))
                 .isInstanceOf(CuisineCodeDuplicateException.class);
-        verify(cuisineMapper, never()).updateEntity(any(CuisineRequest.class), any(Cuisine.class));
+        verify(cuisineMapper, never()).updateCuisineEntity(any(CuisineRequest.class), any(Cuisine.class));
     }
 
     @Test

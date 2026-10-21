@@ -30,7 +30,7 @@ public class CuisineService {
     @Transactional(readOnly = true)
     public List<CuisineResponse> getAll() {
         return cuisineRepository.findAllByOrderByNameAsc().stream()
-                .map(cuisineMapper::toResponse)
+                .map(cuisineMapper::toCuisineResponse)
                 .toList();
     }
 
@@ -41,13 +41,13 @@ public class CuisineService {
             throw new CuisineCodeDuplicateException();
         }
 
-        Cuisine cuisine = cuisineMapper.toEntity(request);
+        Cuisine cuisine = cuisineMapper.toCuisine(request);
         cuisine.setId(appUtil.generateUUID());
         cuisine.setName(cuisine.getName().trim());
 
         cuisine = cuisineRepository.save(cuisine);
         log.info("Created cuisine {} ({})", cuisine.getCode(), cuisine.getId());
-        return cuisineMapper.toResponse(cuisine);
+        return cuisineMapper.toCuisineResponse(cuisine);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -58,9 +58,9 @@ public class CuisineService {
             throw new CuisineCodeDuplicateException();
         }
 
-        cuisineMapper.updateEntity(request, cuisine);
+        cuisineMapper.updateCuisineEntity(request, cuisine);
         cuisine.setName(cuisine.getName().trim());
-        return cuisineMapper.toResponse(cuisine);
+        return cuisineMapper.toCuisineResponse(cuisine);
     }
 
     @PreAuthorize("hasRole('ADMIN')")

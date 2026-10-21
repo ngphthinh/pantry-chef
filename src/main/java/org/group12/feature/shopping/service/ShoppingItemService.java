@@ -33,7 +33,7 @@ public class ShoppingItemService {
     public ShoppingItemResponse create(UUID listId, ShoppingItemCreateRequest request) {
         ShoppingList list = shoppingListService.getOwnedList(listId);
 
-        ShoppingItem item = shoppingItemMapper.toEntity(request);
+        ShoppingItem item = shoppingItemMapper.toShoppingItem(request);
         item.setId(appUtil.generateUUID());
         item.setName(item.getName().trim());
         item.setStatus(ShoppingItemStatus.PENDING);
@@ -41,16 +41,16 @@ public class ShoppingItemService {
 
         item = shoppingItemRepository.save(item);
         log.info("Added shopping item {} to list {}", item.getId(), listId);
-        return shoppingItemMapper.toResponse(item);
+        return shoppingItemMapper.toShoppingItemResponse(item);
     }
 
     @PreAuthorize("hasRole('USER')")
     @Transactional
     public ShoppingItemResponse update(UUID listId, UUID itemId, ShoppingItemUpdateRequest request) {
         ShoppingItem item = findItemInOwnedList(listId, itemId);
-        shoppingItemMapper.updateEntity(request, item);   // dirty checking tự ghi, không cần save()
+        shoppingItemMapper.updateShoppingItemEntity(request, item);   // dirty checking tự ghi, không cần save()
         item.setName(item.getName().trim());
-        return shoppingItemMapper.toResponse(item);
+        return shoppingItemMapper.toShoppingItemResponse(item);
     }
 
     @PreAuthorize("hasRole('USER')")

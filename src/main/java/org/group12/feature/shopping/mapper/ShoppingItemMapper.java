@@ -13,19 +13,18 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 @Mapper(componentModel = "spring")
 public interface ShoppingItemMapper {
 
-    ShoppingItemResponse toResponse(ShoppingItem item);
+    ShoppingItemResponse toShoppingItemResponse(ShoppingItem item);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "shoppingList", ignore = true)
-    ShoppingItem toEntity(ShoppingItemCreateRequest request);
+    ShoppingItem toShoppingItem(ShoppingItemCreateRequest request);
 
-    // PATCH: bỏ qua trường null để giữ nguyên giá trị cũ
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "shoppingList", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
-    void updateEntity(ShoppingItemUpdateRequest request, @MappingTarget ShoppingItem item);
+    void updateShoppingItemEntity(ShoppingItemUpdateRequest request, @MappingTarget ShoppingItem item);
 }

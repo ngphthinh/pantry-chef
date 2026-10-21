@@ -12,16 +12,15 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface ShoppingListMapper {
 
-    ShoppingListResponse toResponse(ShoppingList list);
+    ShoppingListResponse toShoppingListResponse(ShoppingList list);
 
-    // items do service gán (lấy bằng query riêng, có thứ tự, không kích hoạt lazy loading)
     @Mapping(target = "items", ignore = true)
-    ShoppingListDetailResponse toDetailResponse(ShoppingList list);
+    ShoppingListDetailResponse toShoppingListDetailResponse(ShoppingList list);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "items", ignore = true)
-    ShoppingList toEntity(ShoppingListCreateRequest request);
+    ShoppingList toShoppingList(ShoppingListCreateRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", ignore = true)
@@ -29,5 +28,5 @@ public interface ShoppingListMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
-    void updateEntity(ShoppingListUpdateRequest request, @MappingTarget ShoppingList list);
+    void updateShoppingListEntity(ShoppingListUpdateRequest request, @MappingTarget ShoppingList list);
 }

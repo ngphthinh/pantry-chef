@@ -10,13 +10,13 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface CuisineMapper {
 
-    CuisineResponse toResponse(Cuisine cuisine);
+    CuisineResponse toCuisineResponse(Cuisine cuisine);
 
     @Mapping(target = "id", ignore = true)
-    Cuisine toEntity(CuisineRequest request);
+    Cuisine toCuisine(CuisineRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    void updateEntity(CuisineRequest request, @MappingTarget Cuisine cuisine);
+    void updateCuisineEntity(CuisineRequest request, @MappingTarget Cuisine cuisine);
 }

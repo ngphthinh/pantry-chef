@@ -59,9 +59,9 @@ class ShoppingItemServiceTest {
         ShoppingItemResponse response = ShoppingItemResponse.builder().name("Milk").build();
 
         when(shoppingListService.getOwnedList(LIST_ID)).thenReturn(list);
-        when(shoppingItemMapper.toEntity(request)).thenReturn(mapped);
+        when(shoppingItemMapper.toShoppingItem(request)).thenReturn(mapped);
         when(shoppingItemRepository.save(any(ShoppingItem.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(shoppingItemMapper.toResponse(any(ShoppingItem.class))).thenReturn(response);
+        when(shoppingItemMapper.toShoppingItemResponse(any(ShoppingItem.class))).thenReturn(response);
 
         ShoppingItemResponse result = service.create(LIST_ID, request);
 
@@ -98,8 +98,8 @@ class ShoppingItemServiceTest {
         doAnswer(inv -> {
             ((ShoppingItem) inv.getArgument(1)).setStatus(((ShoppingItemUpdateRequest) inv.getArgument(0)).getStatus());
             return null;
-        }).when(shoppingItemMapper).updateEntity(eq(request), eq(item));
-        when(shoppingItemMapper.toResponse(item)).thenReturn(response);
+        }).when(shoppingItemMapper).updateShoppingItemEntity(eq(request), eq(item));
+        when(shoppingItemMapper.toShoppingItemResponse(item)).thenReturn(response);
 
         ShoppingItemResponse result = service.update(LIST_ID, ITEM_ID, request);
 
@@ -115,7 +115,7 @@ class ShoppingItemServiceTest {
 
         assertThatThrownBy(() -> service.update(LIST_ID, ITEM_ID, new ShoppingItemUpdateRequest()))
                 .isInstanceOf(ShoppingItemNotFoundException.class);
-        verify(shoppingItemMapper, never()).updateEntity(any(ShoppingItemUpdateRequest.class), any(ShoppingItem.class));
+        verify(shoppingItemMapper, never()).updateShoppingItemEntity(any(ShoppingItemUpdateRequest.class), any(ShoppingItem.class));
     }
 
     @Test
