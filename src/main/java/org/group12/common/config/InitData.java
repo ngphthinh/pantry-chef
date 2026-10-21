@@ -13,6 +13,8 @@ import org.group12.feature.auth.enums.ThemeMode;
 import org.group12.feature.auth.repository.RoleRepository;
 import org.group12.feature.auth.repository.UserRepository;
 import org.group12.feature.auth.service.AuthenticationService;
+import org.group12.feature.recipe.entity.Cuisine;
+import org.group12.feature.recipe.repository.CuisineRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -24,6 +26,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Slf4j
 @Profile("dev")
@@ -36,6 +39,7 @@ public class InitData implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final AppUtil appUtil;
     private final AuthenticationService authenticationService;
+    private final CuisineRepository cuisineRepository;
 
     @Value("${app.password-default}")
     private String PASSWORD;
@@ -45,6 +49,7 @@ public class InitData implements CommandLineRunner {
     public void run(String... args) throws Exception {
         initRoles();
         initUsers();
+        initCuisines();
     }
 
     private void initUsers() {
@@ -93,5 +98,14 @@ public class InitData implements CommandLineRunner {
         }
     }
 
+    private void initCuisines() {
+        if (cuisineRepository.count() == 0) {
+            List<Cuisine> cuisines = Stream.of("VIETNAMESE:Vietnamese", "ASIAN:Asian", "WESTERN:Western", "ITALIAN:Italian", "OTHER:Other")
+                    .map(s -> s.split(":"))
+                    .map(p -> Cuisine.builder().id(appUtil.generateUUID()).code(p[0]).name(p[1]).build())
+                    .toList();
+            cuisineRepository.saveAll(cuisines);
+        }
+    }
 
 }
