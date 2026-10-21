@@ -28,6 +28,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Set;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -42,6 +43,9 @@ public class AuthenticationService {
     private final TokenBlackListService tokenBlackListService;
     private final AppUtil appUtil;
     private final UserMapper userMapper;
+    private final ChangePasswordService changePasswordService;
+    private final EmailService emailService;
+    private final PasswordGenerator passwordGenerator;
 
 
     @Transactional
@@ -76,9 +80,6 @@ public class AuthenticationService {
 //            throw new AppException(ErrorCode.ACCOUNT_BANNED);
 //        }
         String refreshToken = jwtService.generateRefreshToken(user);
-
-        refreshTokenService.saveRefreshToken(refreshToken, user.getId().toString());
-
         log.info("User {} logged in", user.getEmail());
 
         return buildAuthResponse(user, refreshToken);
@@ -105,13 +106,12 @@ public class AuthenticationService {
 
         String username = refreshTokenService.getUser(refreshTokenStr);
 
-        User user = userRepository.findByEmail(username)
+        User user = userRepository.findById(UUID.fromString(username))
                 .orElseThrow(UserNotFoundException::new);
 
         String newRefreshToken = jwtService.generateRefreshToken(user);
 
         refreshTokenService.deleteRefreshToken(refreshTokenStr);
-        refreshTokenService.saveRefreshToken(newRefreshToken, user.getId().toString());
 
         return buildAuthResponse(user, newRefreshToken);
 
@@ -149,7 +149,6 @@ public class AuthenticationService {
      */
     public IntrospectResponse introspect(IntrospectRequest request) {
         IntrospectResponse introspectResponse = jwtService.introspect(request.getAccessToken());
-
 //        if (introspectResponse.isActive() && introspectResponse.getUserId() != null) {
 //            banService.findActiveBanForUser(UUID.fromString(introspectResponse.getUserId()))
 //                    .ifPresent(ban -> {
@@ -159,9 +158,54 @@ public class AuthenticationService {
         return introspectResponse;
     }
 
+    @Transactional
+    public void changePassword(ChangePasswordRequest request) {
+        User user = userRepository.findById(appUtil.userIdFromAuthentication())
+                .orElseThrow(UserNotFoundException::new);
 
-    @PreAuthorize("hasRole('STUDENT') or hasRole('TUTOR') or hasRole('ADMIN')")
-    public String testAccessDenied() {
-        return "DATA";
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new PasswordInCorrectException();
+        }
+        // Invalidate all tokens by saving the current timestamp in Redis
+        String changedPasswordDate = String.valueOf(Instant.now().toEpochMilli());
+        changePasswordService.saveTokenInvalidationTimestamp(user.getId().toString(), changedPasswordDate);
+
+        refreshTokenService.revokeAllRefreshTokens(user.getId().toString());
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
     }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        IntrospectResponse introspectResponse = introspect(new IntrospectRequest(request.getToken()));
+        User user = userRepository.findById(UUID.fromString(introspectResponse.getUserId()))
+                .orElseThrow(UserNotFoundException::new);
+        // Invalidate all tokens by saving the current timestamp in Redis
+        String changedPasswordDate = String.valueOf(Instant.now().toEpochMilli());
+        changePasswordService.saveTokenInvalidationTimestamp(user.getId().toString(), changedPasswordDate);
+        refreshTokenService.revokeAllRefreshTokens(user.getId().toString());
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+    }
+
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        userRepository.findByEmail(request.getEmail()).ifPresentOrElse(user -> {
+            String newPassword = passwordGenerator.generatePassword();
+
+            user.setPassword(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+
+            // Invalidate all refresh tokens for the user
+            refreshTokenService.revokeAllRefreshTokens(user.getId().toString());
+
+            emailService.sendResetPasswordEmail(
+                    user.getEmail(),
+                    newPassword
+            );
+        }, () -> {
+            throw new UserNotFoundException();
+        });
+    }
+
+
 }

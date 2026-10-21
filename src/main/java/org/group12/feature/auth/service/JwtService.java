@@ -80,6 +80,11 @@ public class JwtService {
         return VALID_DURATION;
     }
 
+    /**
+     * Generate a refresh token for the given user and save it in Redis.
+     * @param user The user for whom the refresh token is being generated.
+     * @return The generated refresh token as a String.
+     */
     public String generateRefreshToken(User user) {
         String refreshToken = UUID.randomUUID().toString();
         refreshTokenService.saveRefreshToken(refreshToken, user.getId().toString());

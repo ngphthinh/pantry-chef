@@ -37,9 +37,13 @@ public class SecurityConfig {
             "/v1/auth/register",
             "/v1/auth/register/**",
             "/v1/auth/refresh-token",
-            "/v1/auth/forgot-password",
-            "/v1/auth/reset-password",
             "/v1/auth/logout",
+    };
+
+    private static final String[] PUBLIC_ENDPOINTS_PATCH = {
+            "/v1/auth/reset-password",
+            "/v1/auth/forgot-password",
+
     };
 
     /**
@@ -61,10 +65,10 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable);
 
         http.authorizeHttpRequests(authorize ->
-                authorize.requestMatchers(DOCS_ENDPOINTS)
-                        .permitAll()
+                authorize.requestMatchers(DOCS_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS_POST).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS_GET).permitAll()
+                        .requestMatchers(HttpMethod.PATCH, PUBLIC_ENDPOINTS_PATCH).permitAll()
                         .requestMatchers(PUBLIC_ENDPOINTS_HANDSHAKE).permitAll()
                         .anyRequest().authenticated()
         );

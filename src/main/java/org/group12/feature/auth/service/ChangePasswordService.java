@@ -18,10 +18,9 @@ public class ChangePasswordService {
         this.redis = redis;
     }
 
-    public void saveTokenInvalidationTimestamp(String email, String changedPasswordDate ) {
-        redis.opsForValue().set(TOKEN_IAT_AVAILABLE + email ,changedPasswordDate, TTL_IN_SECOND, TimeUnit.SECONDS);
+    public void saveTokenInvalidationTimestamp(String subject, String changedPasswordDate) {
+        redis.opsForValue().set(TOKEN_IAT_AVAILABLE + subject, changedPasswordDate, TTL_IN_SECOND, TimeUnit.SECONDS);
     }
-
 
 
     public boolean isTokenInvalidationTimestampExists(String email) {

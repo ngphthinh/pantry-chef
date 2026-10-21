@@ -3,14 +3,13 @@ package org.group12.feature.auth.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.group12.common.dto.response.ApiResponse;
-import org.group12.feature.auth.dto.request.LoginRequest;
-import org.group12.feature.auth.dto.request.LogoutRequest;
-import org.group12.feature.auth.dto.request.RefreshTokenRequest;
-import org.group12.feature.auth.dto.request.UserCreateRequest;
+import org.group12.feature.auth.dto.request.*;
 import org.group12.feature.auth.dto.response.AuthenticateResponse;
+import org.group12.feature.auth.dto.response.IntrospectResponse;
 import org.group12.feature.auth.dto.response.UserResponse;
 import org.group12.feature.auth.enums.AuthResponseCode;
 import org.group12.feature.auth.service.AuthenticationService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -73,12 +72,40 @@ public class AuthenticationController {
                 .build();
     }
 
-    @GetMapping("/test")
-    public ApiResponse<String> test() {
-        return ApiResponse.<String>builder()
-                .code(AuthResponseCode.LOGIN_SUCCESS.getCode())
-                .message(AuthResponseCode.LOGIN_SUCCESS.getMessage())
-                .data(authService.testAccessDenied())
+    // no content 204
+    @PatchMapping("/change-password")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void changePassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
+        authService.changePassword(changePasswordRequest);
+    }
+
+    @PatchMapping("/reset-password")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
+        authService.resetPassword(resetPasswordRequest);
+    }
+
+
+    @PostMapping("/introspect")
+    public ApiResponse<IntrospectResponse> introspect(@Valid @RequestBody IntrospectRequest introspectRequest) {
+        IntrospectResponse response = authService.introspect(introspectRequest);
+
+        return ApiResponse.<IntrospectResponse>builder()
+                .code(AuthResponseCode.INTROSPECT_SUCCESS.getCode())
+                .message(AuthResponseCode.INTROSPECT_SUCCESS.getMessage())
+                .data(response)
                 .build();
     }
+
+    @PatchMapping("/forgot-password")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
+        authService.forgotPassword(forgotPasswordRequest);
+    }
+
+    @GetMapping("/test")
+    public String test() {
+        return "Test";
+    }
+
 }
