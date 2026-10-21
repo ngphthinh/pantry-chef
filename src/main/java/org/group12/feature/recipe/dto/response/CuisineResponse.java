@@ -1,5 +1,6 @@
-package org.group12.feature.cuisine.dto.response;
+package org.group12.feature.recipe.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Data
 @Builder
+@Schema
 public class CuisineResponse {
     private UUID id;
     private String code;

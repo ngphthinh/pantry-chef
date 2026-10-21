@@ -1,7 +1,7 @@
-package org.group12.feature.cuisine.mapper;
+package org.group12.feature.recipe.mapper;
 
-import org.group12.feature.cuisine.dto.request.CuisineRequest;
-import org.group12.feature.cuisine.dto.response.CuisineResponse;
+import org.group12.feature.recipe.dto.request.CuisineRequest;
+import org.group12.feature.recipe.dto.response.CuisineResponse;
 import org.group12.feature.recipe.entity.Cuisine;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

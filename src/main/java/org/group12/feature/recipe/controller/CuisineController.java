@@ -1,12 +1,12 @@
-package org.group12.feature.cuisine.controller;
+package org.group12.feature.recipe.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.group12.common.dto.response.ApiResponse;
-import org.group12.feature.cuisine.dto.request.CuisineRequest;
-import org.group12.feature.cuisine.dto.response.CuisineResponse;
-import org.group12.feature.cuisine.enums.CuisineResponseCode;
-import org.group12.feature.cuisine.service.CuisineService;
+import org.group12.feature.recipe.dto.request.CuisineRequest;
+import org.group12.feature.recipe.dto.response.CuisineResponse;
+import org.group12.feature.recipe.enums.CuisineResponseCode;
+import org.group12.feature.recipe.service.CuisineService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

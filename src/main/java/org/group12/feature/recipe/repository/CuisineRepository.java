@@ -1,4 +1,4 @@
-package org.group12.feature.cuisine.repository;
+package org.group12.feature.recipe.repository;
 
 import org.group12.feature.recipe.entity.Cuisine;
 import org.springframework.data.jpa.repository.JpaRepository;

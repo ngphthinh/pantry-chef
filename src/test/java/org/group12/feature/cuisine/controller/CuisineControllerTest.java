@@ -2,11 +2,12 @@ package org.group12.feature.cuisine.controller;
 
 import org.group12.common.exception.GlobalExceptionHandler;
 import org.group12.common.utils.AppUtil;
-import org.group12.feature.cuisine.dto.request.CuisineRequest;
-import org.group12.feature.cuisine.dto.response.CuisineResponse;
-import org.group12.feature.cuisine.exception.CuisineInUseException;
-import org.group12.feature.cuisine.exception.CuisineNotFoundException;
-import org.group12.feature.cuisine.service.CuisineService;
+import org.group12.feature.recipe.controller.CuisineController;
+import org.group12.feature.recipe.dto.request.CuisineRequest;
+import org.group12.feature.recipe.dto.response.CuisineResponse;
+import org.group12.feature.recipe.exception.CuisineInUseException;
+import org.group12.feature.recipe.exception.CuisineNotFoundException;
+import org.group12.feature.recipe.service.CuisineService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -28,10 +29,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Test lớp controller (validation, mã phản hồi, ánh xạ lỗi) không cần khởi động Spring context.
- * Phân quyền ({@code @PreAuthorize}) nằm ở service nên không thuộc phạm vi test này.
- */
 class CuisineControllerTest {
 
     private static final UUID ID = UUID.randomUUID();

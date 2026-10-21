@@ -1,14 +1,15 @@
 package org.group12.feature.cuisine.service;
 
 import org.group12.common.utils.AppUtil;
-import org.group12.feature.cuisine.dto.request.CuisineRequest;
-import org.group12.feature.cuisine.dto.response.CuisineResponse;
-import org.group12.feature.cuisine.exception.CuisineCodeDuplicateException;
-import org.group12.feature.cuisine.exception.CuisineInUseException;
-import org.group12.feature.cuisine.exception.CuisineNotFoundException;
-import org.group12.feature.cuisine.mapper.CuisineMapper;
-import org.group12.feature.cuisine.repository.CuisineRepository;
+import org.group12.feature.recipe.dto.request.CuisineRequest;
+import org.group12.feature.recipe.dto.response.CuisineResponse;
+import org.group12.feature.recipe.exception.CuisineCodeDuplicateException;
+import org.group12.feature.recipe.exception.CuisineInUseException;
+import org.group12.feature.recipe.exception.CuisineNotFoundException;
+import org.group12.feature.recipe.mapper.CuisineMapper;
+import org.group12.feature.recipe.repository.CuisineRepository;
 import org.group12.feature.recipe.entity.Cuisine;
+import org.group12.feature.recipe.service.CuisineService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;

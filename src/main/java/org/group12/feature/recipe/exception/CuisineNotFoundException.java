@@ -1,4 +1,4 @@
-package org.group12.feature.cuisine.exception;
+package org.group12.feature.recipe.exception;
 
 import org.group12.common.exception.AppException;
 

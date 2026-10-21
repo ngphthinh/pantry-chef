@@ -9,16 +9,13 @@ import org.group12.feature.auth.enums.MeasurementSystem;
 import org.group12.feature.auth.enums.RoleName;
 import org.group12.feature.auth.repository.RoleRepository;
 import org.group12.feature.auth.repository.UserRepository;
-import org.group12.feature.cuisine.repository.CuisineRepository;
+import org.group12.feature.recipe.repository.CuisineRepository;
 import org.group12.feature.recipe.entity.Cuisine;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;

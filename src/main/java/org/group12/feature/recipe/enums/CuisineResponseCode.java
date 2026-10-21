@@ -1,4 +1,4 @@
-package org.group12.feature.cuisine.enums;
+package org.group12.feature.recipe.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

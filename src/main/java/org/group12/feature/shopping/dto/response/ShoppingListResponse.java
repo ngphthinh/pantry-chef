@@ -1,5 +1,6 @@
 package org.group12.feature.shopping.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Data
 @Builder
+@Schema
 public class ShoppingListResponse {
     private UUID id;
     private String name;

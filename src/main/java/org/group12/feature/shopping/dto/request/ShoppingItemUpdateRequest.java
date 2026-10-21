@@ -1,5 +1,6 @@
 package org.group12.feature.shopping.dto.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -14,6 +15,7 @@ import org.group12.feature.shopping.enums.ShoppingItemStatus;
 @NoArgsConstructor
 @Data
 @Builder
+@Schema
 public class ShoppingItemUpdateRequest {
     @Pattern(regexp = ".*\\S.*", message = "Name must not be blank")
     @Size(max = 255, message = "Name must not exceed 255 characters")
