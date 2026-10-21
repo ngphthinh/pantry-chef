@@ -28,7 +28,6 @@ public enum ErrorCode implements BaseErrorCode{
     TOKEN_EXPIRED("AUTH_006", "Token has expired", HttpStatus.UNAUTHORIZED),
     USER_NOT_SUPPORTED("USER_008", "Unsupported user type", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_UUID("VAL_007", "Invalid UUID format", HttpStatus.BAD_REQUEST),
-    //Erroll phần application -- Xuyen
     UPLOAD_MEDIA_FAILED("MEDIA_001", "Upload media failed", HttpStatus.INTERNAL_SERVER_ERROR)
 
     ;

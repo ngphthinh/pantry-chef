@@ -1,6 +1,6 @@
 package org.group12.common.exception;
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.databind.exc.InvalidFormatException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -197,6 +197,7 @@ public class GlobalExceptionHandler {
                 .status(errorCode.getHttpStatus())
                 .body(response);
     }
+
     @ExceptionHandler(ParameterizedException.class)
     public ResponseEntity<ErrorResponse> handleParameterizedException(ParameterizedException e, HttpServletRequest request) {
 
@@ -266,19 +267,29 @@ public class GlobalExceptionHandler {
         log.info("HttpMessageNotReadableException at [{}]: {}", request.getRequestURI(), cause != null ? cause.getMessage() : ex.getMessage());
         String message;
 
-        if (cause instanceof InvalidFormatException ife && ife.getTargetType() != null && ife.getTargetType().isEnum()) {
+        while (cause != null && !(cause instanceof InvalidFormatException)) {
+            cause = cause.getCause();
+        }
+
+        if (cause instanceof InvalidFormatException ife
+                && ife.getTargetType() != null
+                && ife.getTargetType().isEnum()) {
+
             String fieldName = ife.getPath().isEmpty()
                     ? "field"
-                    : ife.getPath().get(ife.getPath().size() - 1).getFieldName();
+                    : ife.getPath().get(ife.getPath().size() - 1).getPropertyName();
 
-            Object[] acceptedValues = ife.getTargetType().getEnumConstants();
-            String accepted = Arrays.stream(acceptedValues)
+            String accepted = Arrays.stream(ife.getTargetType().getEnumConstants())
                     .map(Object::toString)
                     .collect(Collectors.joining(", "));
 
             message = mapAttributes(
                     "Invalid value ''{value}'' for field ''{field}''. Accepted values: {accepted}",
-                    Map.of("field", fieldName, "value", ife.getValue(), "accepted", accepted)
+                    Map.of(
+                            "field", fieldName,
+                            "value", String.valueOf(ife.getValue()),
+                            "accepted", accepted
+                    )
             );
         } else {
             message = errorCode.getMessage();

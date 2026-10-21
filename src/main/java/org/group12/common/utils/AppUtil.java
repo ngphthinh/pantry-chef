@@ -101,11 +101,9 @@ public class AppUtil {
             items.remove(items.size() - 1);
         }
 
-        UUID nextCursor = items.isEmpty()
-                ? null
-                : cursorExtractor.apply(
-                items.get(items.size() - 1)
-        );
+        UUID nextCursor = hasNext && !items.isEmpty()
+                ? cursorExtractor.apply(items.get(items.size() - 1))
+                : null;
 
         return CursorResponse.<R>builder()
                 .content(

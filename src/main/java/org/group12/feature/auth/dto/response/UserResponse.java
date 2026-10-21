@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.group12.feature.auth.enums.MeasurementSystem;
+import org.group12.feature.auth.enums.ThemeMode;
+
 import java.util.UUID;
 
 @AllArgsConstructor
@@ -15,6 +18,6 @@ public class UserResponse {
     private String email;
     private String displayName;
     private String avatarUri;
-    private String measurementSystem;
-    private String themeMode;
+    private MeasurementSystem measurementSystem;
+    private ThemeMode themeMode;
 }

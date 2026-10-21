@@ -34,6 +34,7 @@ public class AuthenticationController {
     }
 
 
+    @ResponseStatus(code = HttpStatus.CREATED)
     @PostMapping("/register")
     public ApiResponse<UserResponse> register(@Valid @RequestBody UserCreateRequest userCreateRequest) {
         UserResponse response = authService.register(userCreateRequest);
