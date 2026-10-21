@@ -19,8 +19,6 @@ import java.util.UUID;
 public class ShoppingListDetailResponse {
     private UUID id;
     private String name;
-    private Instant createdAt;
-    private Instant updatedAt;
     @Builder.Default
     private List<ShoppingItemResponse> items = new ArrayList<>();
 }

@@ -10,6 +10,7 @@ import org.group12.feature.shopping.dto.response.ShoppingListDetailResponse;
 import org.group12.feature.shopping.dto.response.ShoppingListResponse;
 import org.group12.feature.shopping.enums.ShoppingResponseCode;
 import org.group12.feature.shopping.service.ShoppingListService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -23,6 +24,8 @@ public class ShoppingListController {
 
     // POST /v1/shopping-lists
     @PostMapping
+    @ResponseStatus(code = HttpStatus.CREATED)
+
     public ApiResponse<ShoppingListResponse> create(@Valid @RequestBody ShoppingListCreateRequest request) {
         return ApiResponse.<ShoppingListResponse>builder()
                 .code(ShoppingResponseCode.SHOPPING_LIST_CREATED.getCode())
@@ -66,11 +69,9 @@ public class ShoppingListController {
 
     // DELETE /v1/shopping-lists/{id}
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable UUID id) {
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
         shoppingListService.delete(id);
-        return ApiResponse.<Void>builder()
-                .code(ShoppingResponseCode.SHOPPING_LIST_DELETED.getCode())
-                .message(ShoppingResponseCode.SHOPPING_LIST_DELETED.getMessage())
-                .build();
+
     }
 }

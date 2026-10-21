@@ -15,16 +15,20 @@ import org.group12.feature.shopping.enums.ShoppingItemStatus;
 @NoArgsConstructor
 @Data
 @Builder
-@Schema
+@Schema(description = "Request body for updating a shopping item")
 public class ShoppingItemUpdateRequest {
+    @Schema(description = "Name of the shopping item", example = "Milk")
     @Pattern(regexp = ".*\\S.*", message = "Name must not be blank")
     @Size(max = 255, message = "Name must not exceed 255 characters")
     private String name;
 
+    @Schema(description = "Quantity of the shopping item", example = "2")
     @Positive(message = "Quantity must be greater than 0")
     private int quantity;
 
+    @Schema(description = "Unit of the shopping item", example = "LITER")
     private Unit unit;
 
+    @Schema(description = "Status of the shopping item", example = "PENDING")
     private ShoppingItemStatus status;
 }

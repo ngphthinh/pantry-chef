@@ -22,6 +22,4 @@ public class ShoppingItemResponse {
     private int quantity;
     private Unit unit;
     private ShoppingItemStatus status;
-    private Instant createdAt;
-    private Instant updatedAt;
 }

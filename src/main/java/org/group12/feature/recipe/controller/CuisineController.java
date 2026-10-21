@@ -31,6 +31,7 @@ public class CuisineController {
 
     // POST /v1/cuisines  (ADMIN)
     @PostMapping
+    @ResponseStatus(code = org.springframework.http.HttpStatus.CREATED)
     public ApiResponse<CuisineResponse> create(@Valid @RequestBody CuisineRequest request) {
         return ApiResponse.<CuisineResponse>builder()
                 .code(CuisineResponseCode.CUISINE_CREATED.getCode())
@@ -52,11 +53,8 @@ public class CuisineController {
 
     // DELETE /v1/cuisines/{id}  (ADMIN)
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable UUID id) {
+    @ResponseStatus(code = org.springframework.http.HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
         cuisineService.delete(id);
-        return ApiResponse.<Void>builder()
-                .code(CuisineResponseCode.CUISINE_DELETED.getCode())
-                .message(CuisineResponseCode.CUISINE_DELETED.getMessage())
-                .build();
     }
 }

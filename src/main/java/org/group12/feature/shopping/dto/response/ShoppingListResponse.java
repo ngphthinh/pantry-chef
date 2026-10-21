@@ -17,6 +17,4 @@ import java.util.UUID;
 public class ShoppingListResponse {
     private UUID id;
     private String name;
-    private Instant createdAt;
-    private Instant updatedAt;
 }
