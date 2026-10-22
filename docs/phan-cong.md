@@ -6,3 +6,4 @@
 | 4 | Tùng: Recipe + Công thức tự tạo | 8 + 6 = 14 | 4 | Tích hợp API công thức bên ngoài, cache, cursor dạng offset. Phần khó nhất về kỹ thuật nên số endpoint ít hơn |
 | 5 | Thuận: Cookbook + Common | 11 + 6 = 17 | 5 | Response cung cấp đủ dữ liệu để mobile cache và xem offline |
 | 6 | Thiệu: Shopping + Cuisine | 11 + 4 = 15 | 0 | Seed `Cuisine` sớm vì thành viên 4 cần sử dụng |
+ đo

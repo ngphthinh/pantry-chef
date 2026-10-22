@@ -23,6 +23,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+// nơi lưu trữ 1 nguyên liệu mà người dùng đang có
 public class PantryItem extends SoftDeletableEntity {
     @Id
     private UUID id;
