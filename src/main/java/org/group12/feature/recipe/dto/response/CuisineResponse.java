@@ -12,7 +12,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @Data
 @Builder
-@Schema
 public class CuisineResponse {
     private UUID id;
     private String code;

@@ -51,7 +51,7 @@ class ShoppingListControllerTest {
         mockMvc.perform(post("/v1/shopping-lists")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Weekend\"}"))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value("SHOPPING_201"))
                 .andExpect(jsonPath("$.data.name").value("Weekend"));
     }

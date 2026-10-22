@@ -1,5 +1,6 @@
 package org.group12.feature.shopping.controller;
 
+import org.group12.common.enums.Unit;
 import org.group12.common.exception.GlobalExceptionHandler;
 import org.group12.common.utils.AppUtil;
 import org.group12.feature.shopping.dto.request.ShoppingItemCreateRequest;
@@ -55,7 +56,7 @@ class ShoppingItemControllerTest {
         mockMvc.perform(post(ITEMS_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Milk\",\"quantity\":2,\"unit\":\"L\"}"))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value("SHOPPING_201"))
                 .andExpect(jsonPath("$.data.status").value("PENDING"));
     }
@@ -83,23 +84,42 @@ class ShoppingItemControllerTest {
     }
 
     @Test
-    void patch_onlyStatus_passesPartialRequestToService() throws Exception {
+    void patch_withAllFields_returnsOk() throws Exception {
         when(shoppingItemService.update(eq(LIST_ID), eq(ITEM_ID), any(ShoppingItemUpdateRequest.class)))
                 .thenReturn(ShoppingItemResponse.builder().id(ITEM_ID).name("Milk")
                         .status(ShoppingItemStatus.BOUGHT).build());
 
         mockMvc.perform(patch(ITEMS_URL + "/" + ITEM_ID)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"BOUGHT\"}"))
+                        .content("{\"name\":\"Milk\",\"quantity\":2,\"unit\":\"L\",\"status\":\"BOUGHT\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SHOPPING_200"))
                 .andExpect(jsonPath("$.data.status").value("BOUGHT"));
 
         ArgumentCaptor<ShoppingItemUpdateRequest> captor = ArgumentCaptor.forClass(ShoppingItemUpdateRequest.class);
         verify(shoppingItemService).update(eq(LIST_ID), eq(ITEM_ID), captor.capture());
+        assertThat(captor.getValue().getName()).isEqualTo("Milk");
+        assertThat(captor.getValue().getQuantity()).isEqualTo(2.0);
+        assertThat(captor.getValue().getUnit()).isEqualTo(Unit.L);
         assertThat(captor.getValue().getStatus()).isEqualTo(ShoppingItemStatus.BOUGHT);
-        assertThat(captor.getValue().getName()).isNull();
-        assertThat(captor.getValue().getQuantity()).isNull();
+    }
+
+    @Test
+    void patch_withAnyFieldMissingOrNull_returns400AndDoesNotUpdate() throws Exception {
+        String[] bodies = {
+                "{\"quantity\":2,\"unit\":\"L\",\"status\":\"BOUGHT\"}",                       // thiếu name
+                "{\"name\":\"Milk\",\"unit\":\"L\",\"status\":\"BOUGHT\"}",                      // thiếu quantity
+                "{\"name\":\"Milk\",\"quantity\":2,\"status\":\"BOUGHT\"}",                      // thiếu unit
+                "{\"name\":\"Milk\",\"quantity\":2,\"unit\":\"L\"}",                             // thiếu status
+                "{\"name\":\"Milk\",\"quantity\":null,\"unit\":\"L\",\"status\":\"BOUGHT\"}"    // null rõ ràng
+        };
+        for (String body : bodies) {
+            mockMvc.perform(patch(ITEMS_URL + "/" + ITEM_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest());
+        }
+        verifyNoInteractions(shoppingItemService);
     }
 
     @Test
@@ -120,15 +140,14 @@ class ShoppingItemControllerTest {
 
         mockMvc.perform(patch(ITEMS_URL + "/" + ITEM_ID)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"BOUGHT\"}"))
+                        .content("{\"name\":\"Milk\",\"quantity\":2,\"unit\":\"L\",\"status\":\"BOUGHT\"}"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void delete_returnsDeletedCode() throws Exception {
+    void delete_returnsNoContent() throws Exception {
         mockMvc.perform(delete(ITEMS_URL + "/" + ITEM_ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("SHOPPING_200"));
+                .andExpect(status().isNoContent());
 
         verify(shoppingItemService).delete(LIST_ID, ITEM_ID);
     }

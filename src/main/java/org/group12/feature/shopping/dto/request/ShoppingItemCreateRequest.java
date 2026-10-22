@@ -14,14 +14,18 @@ import org.group12.common.enums.Unit;
 @NoArgsConstructor
 @Data
 @Builder
-@Schema
+@Schema(description = "Request body for adding an item to a shopping list")
 public class ShoppingItemCreateRequest {
+
+    @Schema(description = "Name of the shopping item", example = "Eggs")
     @NotBlank(message = "Name is required")
     @Size(max = 255, message = "Name must not exceed 255 characters")
     private String name;
 
+    @Schema(description = "Quantity of the shopping item", example = "10")
     @Positive(message = "Quantity must be greater than 0")
-    private int quantity;
+    private Double quantity;
 
+    @Schema(description = "Unit of the shopping item", example = "PCS")
     private Unit unit;
 }
