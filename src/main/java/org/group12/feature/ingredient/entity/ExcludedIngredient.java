@@ -8,7 +8,10 @@ import org.group12.feature.auth.entity.User;
 import java.util.UUID;
 
 @Entity
-@Table(name = "excluded_ingredients")
+@Table(
+        name = "excluded_ingredients",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "name"})
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,6 +19,8 @@ import java.util.UUID;
 @Builder
 public class ExcludedIngredient extends BaseEntity {
     @Id
+    private UUID id;
+
     @Column(nullable = false)
     private String name;
 

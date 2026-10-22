@@ -3,6 +3,7 @@ package org.group12.feature.ingredient.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.group12.common.entity.BaseEntity;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.util.UUID;
 
@@ -20,4 +21,7 @@ public class IngredientCategory extends BaseEntity {
     private String code;
     @Column(nullable = false)
     private String name;
+    @ColumnDefault("0")
+    @Column(nullable = false)
+    private int sortOrder;
 }

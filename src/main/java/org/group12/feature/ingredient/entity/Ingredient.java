@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.group12.common.entity.SoftDeletableEntity;
 import org.group12.common.enums.Unit;
+import org.group12.common.utils.TextUtil;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -11,7 +12,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "ingredients")
-@SQLDelete(sql = "UPDATE ingredients SET deleted_at = now() WHERE id = ?")
+@SQLDelete(sql = "UPDATE ingredients SET deleted_at = now(), barcode = NULL WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
@@ -25,8 +26,19 @@ public class Ingredient extends SoftDeletableEntity {
     private String name;
     @Enumerated(EnumType.STRING)
     private Unit defaultUnit;
+    @Column(name = "search_name")
+    private String searchName;
+
+    @Column(unique = true)
+    private String barcode;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private IngredientCategory category;
+
+    @PrePersist
+    @PreUpdate
+    void updateSearchName() {
+        this.searchName = TextUtil.normalizeForSearch(this.name);
+    }
 }
