@@ -1,0 +1,25 @@
+package org.group12.feature.ingredient.dto.request;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Data
+@Schema(description = "Request DTO for creating a new ingredient")
+public class IngredientCategoryRequest {
+    @NotBlank(message = "Code is required")
+    @Pattern(regexp = "^[A-Z][A-Z0-9_]{1,49}$", message = "Code must be upper snake case, e.g. SPICE_HERB")
+    private String code;
+
+    @NotBlank(message = "Name is required")
+    @Size(max = 255, message = "Name must be at most 255 characters")
+    private String name;
+}

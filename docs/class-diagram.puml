@@ -1,0 +1,184 @@
+@startuml
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ===== ENUM =====
+enum Unit {
+  G
+  KG
+  ML
+  L
+  PCS
+  TBSP
+  TSP
+  CUP
+  PINCH
+}
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+enum StorageLocation {
+  FRIDGE
+  FREEZER
+  PANTRY_SHELF
+}
+enum ShoppingItemStatus {
+  PENDING
+  BOUGHT
+}
+enum MeasurementSystem {
+  METRIC
+  IMPERIAL
+}
+enum ThemeMode {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+' ===== BASE =====
+abstract class BaseEntity {
+  +id: UUID
+  +createdAt: Date
+  +updatedAt: Date
+}
+abstract class SoftDeletableEntity extends BaseEntity {
+  +deletedAt: Date
+}
+
+' ===== LOOKUP (lưu trên service) =====
+class Cuisine extends BaseEntity {
+  +code: String
+  +name: String
+}
+class IngredientCategory extends BaseEntity {
+  +code: String
+  +name: String
+}
+class SyncStatus extends BaseEntity {
+  +code: String
+  +name: String
+}
+
+' ===== ENTITY =====
+class User extends SoftDeletableEntity {
+  +email: String
+  +displayName: String
+  +avatarUri: String
+  +language: String
+  +measurementSystem: MeasurementSystem
+  +themeMode: ThemeMode
+}
+class ExcludedIngredient extends BaseEntity {
+  +name: String
+}
+class Ingredient extends SoftDeletableEntity {
+  +name: String
+  +defaultUnit: Unit
+}
+class PantryItem extends SoftDeletableEntity {
+  +quantity: double
+  +unit: Unit
+  +location: StorageLocation
+  +expiryDate: Date
+  +photoUri: String
+  +addedAt: Date
+}
+class Recipe extends SoftDeletableEntity {
+  +externalId: String
+  +title: String
+  +imageUrl: String
+  +localImageUri: String
+  +servings: int
+  +readyInMinutes: int
+  +difficulty: Difficulty
+  +sourceUrl: String
+  +isCustom: boolean
+}
+class RecipeIngredient extends BaseEntity {
+  +name: String
+  +amount: double
+  +unit: Unit
+}
+class RecipeStep extends BaseEntity {
+  +order: int
+  +text: String
+  +timerSeconds: int
+}
+class SavedRecipe extends SoftDeletableEntity {
+  +rating: int
+  +note: String
+  +isFavorite: boolean
+  +savedAt: Date
+}
+class Collection extends SoftDeletableEntity {
+  +name: String
+}
+class MealPlan extends SoftDeletableEntity {
+  +weekStart: Date
+}
+class MealPlanEntry extends SoftDeletableEntity {
+  +date: Date
+  +mealType: MealType
+  +servings: int
+  +isCooked: boolean
+}
+class ShoppingList extends SoftDeletableEntity {
+  +name: String
+}
+class ShoppingItem extends SoftDeletableEntity {
+  +name: String
+  +quantity: double
+  +unit: Unit
+  +status: ShoppingItemStatus
+}
+class SubstitutionSuggestion extends BaseEntity {
+  +substituteName: String
+  +ratio: String
+  +note: String
+  +confidence: double
+}
+
+' ===== QUAN HỆ =====
+User "1" *-- "*" PantryItem
+User "1" *-- "*" SavedRecipe
+User "1" *-- "*" Collection
+User "1" *-- "*" MealPlan
+User "1" *-- "*" ShoppingList
+User "1" *-- "*" ExcludedIngredient
+
+Cuisine "1" <-- "*" Recipe
+IngredientCategory "1" <-- "*" Ingredient
+SyncStatus "1" <-- "*" PantryItem
+SyncStatus "1" <-- "*" SavedRecipe
+Ingredient "1" <-- "*" PantryItem
+
+Recipe "1" *-- "*" RecipeIngredient
+Recipe "1" *-- "*" RecipeStep
+SavedRecipe "*" --> "1" Recipe
+Collection "*" o-- "*" SavedRecipe
+MealPlan "1" *-- "*" MealPlanEntry
+MealPlanEntry "*" --> "1" Recipe
+ShoppingList "1" *-- "*" ShoppingItem
+SubstitutionSuggestion "*" --> "1" RecipeIngredient : thay cho
+
+' ===== ENUM =====
+PantryItem ..> Unit
+PantryItem ..> StorageLocation
+Ingredient ..> Unit
+RecipeIngredient ..> Unit
+ShoppingItem ..> Unit
+ShoppingItem ..> ShoppingItemStatus
+Recipe ..> Difficulty
+MealPlanEntry ..> MealType
+User ..> MeasurementSystem
+User ..> ThemeMode
+@enduml
