@@ -57,7 +57,6 @@ public class IngredientController {
     }
 
     // POST /v1/ingredients
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ApiResponse<IngredientResponse> create(@Valid @RequestBody IngredientCreateRequest request) {
         return ApiResponse.<IngredientResponse>builder()
@@ -68,7 +67,6 @@ public class IngredientController {
     }
 
     // PUT /v1/ingredients/{id}
-    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ApiResponse<IngredientResponse> update(
             @PathVariable("id") UUID id,
@@ -81,7 +79,6 @@ public class IngredientController {
     }
 
     // DELETE /v1/ingredients/{id}
-    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable("id") UUID id) {
         ingredientService.delete(id);

@@ -13,6 +13,7 @@ import org.group12.feature.ingredient.mapper.IngredientCategoryMapper;
 import org.group12.feature.ingredient.repository.IngredientCategoryRepository;
 import org.group12.feature.ingredient.repository.IngredientRepository;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,9 +30,7 @@ public class IngredientCategoryService {
     private final IngredientCategoryMapper categoryMapper;
     private final AppUtil appUtil;
 
-    /**
-     * Thứ tự: sortOrder tăng dần (0 trước, 1 = ghim cuối), cùng sortOrder thì id giảm dần (mới thêm lên đầu).
-     */
+
     @Transactional(readOnly = true)
     public List<IngredientCategoryResponse> getAll() {
         Sort sort = Sort.by(Sort.Direction.ASC, "sortOrder").and(Sort.by(Sort.Direction.DESC, "id"));
@@ -39,6 +38,7 @@ public class IngredientCategoryService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public IngredientCategoryResponse create(IngredientCategoryRequest request) {
         if (categoryRepository.existsByCode(request.getCode())) {
             throw new IngredientCategoryCodeDuplicateException();
@@ -54,6 +54,7 @@ public class IngredientCategoryService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public IngredientCategoryResponse update(UUID id, IngredientCategoryRequest request) {
         IngredientCategory category = findCategory(id);
 
@@ -67,6 +68,7 @@ public class IngredientCategoryService {
         return categoryMapper.toResponse(categoryRepository.save(category));
     }
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(UUID id) {
         IngredientCategory category = findCategory(id);
 

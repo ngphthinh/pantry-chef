@@ -1,5 +1,6 @@
 package org.group12.feature.ingredient.dto.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @Data
+@Schema(description = "Request DTO for creating a new ingredient")
 public class IngredientUpdateRequest {
     @NotBlank(message = "Name is required")
     @Size(max = 255, message = "Name must be at most 255 characters")

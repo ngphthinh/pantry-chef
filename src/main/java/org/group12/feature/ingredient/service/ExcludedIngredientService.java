@@ -17,9 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Nguyên liệu loại trừ của người dùng hiện tại. Bản ghi của người khác coi như không tồn tại (404).
- */
+
 @Slf4j
 @Service
 @RequiredArgsConstructor

@@ -31,7 +31,7 @@ public class IngredientCategoryController {
     }
 
     // POST /v1/ingredient-categories
-    @PreAuthorize("hasRole('ADMIN')")
+
     @PostMapping
     public ApiResponse<IngredientCategoryResponse> create(@Valid @RequestBody IngredientCategoryRequest request) {
         return ApiResponse.<IngredientCategoryResponse>builder()
@@ -42,7 +42,7 @@ public class IngredientCategoryController {
     }
 
     // PUT /v1/ingredient-categories/{id}
-    @PreAuthorize("hasRole('ADMIN')")
+
     @PutMapping("/{id}")
     public ApiResponse<IngredientCategoryResponse> update(
             @PathVariable("id") UUID id,
@@ -55,7 +55,7 @@ public class IngredientCategoryController {
     }
 
     // DELETE /v1/ingredient-categories/{id}
-    @PreAuthorize("hasRole('ADMIN')")
+
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable("id") UUID id) {
         categoryService.delete(id);

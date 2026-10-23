@@ -22,6 +22,7 @@ import org.group12.feature.ingredient.repository.IngredientRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,14 +42,10 @@ public class IngredientService {
     private final IngredientMapper ingredientMapper;
     private final AppUtil appUtil;
 
-    /**
-     * Tìm / gợi ý nguyên liệu. Phân trang cursor theo id (UUID v7 tăng dần theo thời gian tạo).
-     */
     @Transactional(readOnly = true)
     public CursorResponse<IngredientResponse> search(String keyword, UUID categoryId, UUID cursor, int size) {
         int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
 
-        // lấy dư 1 phần tử để biết còn trang sau hay không
         List<Ingredient> items = ingredientRepository
                 .findAll(buildSearchSpec(keyword, categoryId, cursor), PageRequest.of(0, pageSize + 1, Sort.by("id")))
                 .getContent();
@@ -69,6 +66,7 @@ public class IngredientService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public IngredientResponse create(IngredientCreateRequest request) {
         IngredientCategory category = findCategory(request.getCategoryId());
 
@@ -89,6 +87,7 @@ public class IngredientService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public IngredientResponse update(UUID id, IngredientUpdateRequest request) {
         Ingredient ingredient = findIngredient(id);
         IngredientCategory category = findCategory(request.getCategoryId());
@@ -105,11 +104,8 @@ public class IngredientService {
 
         return ingredientMapper.toResponse(ingredientRepository.save(ingredient));
     }
-
-    /**
-     * Xóa mềm (qua @SQLDelete trên entity).
-     */
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(UUID id) {
         ingredientRepository.delete(findIngredient(id));
     }

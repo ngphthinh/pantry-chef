@@ -69,6 +69,32 @@ public class InitData implements CommandLineRunner {
         initIngredients();
         initExcludedIngredients();
     }
+    private void initSyncStatuses() {
+        Map<String, String> statuses = new LinkedHashMap<>();
+        statuses.put("PENDING", "Chờ đồng bộ");
+        statuses.put("SYNCING", "Đang đồng bộ");
+        statuses.put("SYNCED", "Đã đồng bộ");
+        statuses.put("FAILED", "Đồng bộ thất bại");
+        statuses.put("CONFLICT", "Xung đột dữ liệu");
+
+        Set<String> existing = syncStatusRepository.findAllByCodeIn(statuses.keySet()).stream()
+                .map(SyncStatus::getCode)
+                .collect(Collectors.toSet());
+
+        List<SyncStatus> missing = statuses.entrySet().stream()
+                .filter(e -> !existing.contains(e.getKey()))
+                .map(e -> SyncStatus.builder()
+                        .id(appUtil.generateUUID())
+                        .code(e.getKey())
+                        .name(e.getValue())
+                        .build())
+                .toList();
+
+        if (!missing.isEmpty()) {
+            syncStatusRepository.saveAll(missing);
+            log.info("Seeded {} sync statuses", missing.size());
+        }
+    }
     private void initIngredientCategories() {
         if (ingredientCategoryRepository.count() == 0) {
             List<String> rows = new ArrayList<>(List.of(
@@ -90,22 +116,6 @@ public class InitData implements CommandLineRunner {
             ingredientCategoryRepository.saveAll(categories);
         }
     }
-
-    private void initSyncStatuses() {
-        if (syncStatusRepository.count() == 0) {
-            List<SyncStatus> statuses = Stream.of("PENDING:Chờ đồng bộ", "SYNCING:Đang đồng bộ", "SYNCED:Đã đồng bộ",
-                            "FAILED:Đồng bộ thất bại", "CONFLICT:Xung đột dữ liệu")
-                    .map(s -> s.split(":"))
-                    .map(p -> SyncStatus.builder().id(appUtil.generateUUID()).code(p[0]).name(p[1]).build())
-                    .toList();
-            syncStatusRepository.saveAll(statuses);
-        }
-    }
-
-    /**
-     * Nguyên liệu mẫu, cần initIngredientCategories() chạy trước.
-     * Định dạng mỗi dòng: "Tên:UNIT" hoặc "Tên:UNIT:barcode".
-     */
     private void initIngredients() {
         if (ingredientRepository.count() > 0) {
             return;
