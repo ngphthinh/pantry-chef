@@ -8,7 +8,7 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface SyncStatusMapper {
-    SyncStatusResponse toResponse(SyncStatus syncStatus);
+    SyncStatusResponse toSyncStatusResponse(SyncStatus syncStatus);
 
-    List<SyncStatusResponse> toResponses(List<SyncStatus> syncStatuses);
+    List<SyncStatusResponse> toSyncStatusResponses(List<SyncStatus> syncStatuses);
 }

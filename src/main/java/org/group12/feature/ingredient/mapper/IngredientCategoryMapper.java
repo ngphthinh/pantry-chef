@@ -8,7 +8,7 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface IngredientCategoryMapper {
-    IngredientCategoryResponse toResponse(IngredientCategory category);
+    IngredientCategoryResponse toIngredientCategoryResponse(IngredientCategory category);
 
-    List<IngredientCategoryResponse> toResponses(List<IngredientCategory> categories);
+    List<IngredientCategoryResponse> toIngredientCategoryResponses(List<IngredientCategory> categories);
 }

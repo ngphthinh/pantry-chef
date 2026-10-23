@@ -32,14 +32,14 @@ public class IngredientCategoryService {
 
 
     @Transactional(readOnly = true)
-    public List<IngredientCategoryResponse> getAll() {
+    public List<IngredientCategoryResponse> getIngredientCategories() {
         Sort sort = Sort.by(Sort.Direction.ASC, "sortOrder").and(Sort.by(Sort.Direction.DESC, "id"));
-        return categoryMapper.toResponses(categoryRepository.findAll(sort));
+        return categoryMapper.toIngredientCategoryResponses(categoryRepository.findAll(sort));
     }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public IngredientCategoryResponse create(IngredientCategoryRequest request) {
+    public IngredientCategoryResponse createIngredientCategory(IngredientCategoryRequest request) {
         if (categoryRepository.existsByCode(request.getCode())) {
             throw new IngredientCategoryCodeDuplicateException();
         }
@@ -50,12 +50,12 @@ public class IngredientCategoryService {
                 .name(request.getName().trim())
                 .build();
 
-        return categoryMapper.toResponse(categoryRepository.save(category));
+        return categoryMapper.toIngredientCategoryResponse(categoryRepository.save(category));
     }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public IngredientCategoryResponse update(UUID id, IngredientCategoryRequest request) {
+    public IngredientCategoryResponse updateIngredientCategory(UUID id, IngredientCategoryRequest request) {
         IngredientCategory category = findCategory(id);
 
         if (!category.getCode().equals(request.getCode()) && categoryRepository.existsByCode(request.getCode())) {
@@ -65,11 +65,11 @@ public class IngredientCategoryService {
         category.setCode(request.getCode());
         category.setName(request.getName().trim());
 
-        return categoryMapper.toResponse(categoryRepository.save(category));
+        return categoryMapper.toIngredientCategoryResponse(categoryRepository.save(category));
     }
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public void delete(UUID id) {
+    public void deleteIngredientCategory(UUID id) {
         IngredientCategory category = findCategory(id);
 
         if (ingredientRepository.existsAnyByCategoryId(id)) {

@@ -23,7 +23,7 @@ public class IngredientController {
 
     // GET /v1/ingredients/search?q=&categoryId=&cursor=&size=
     @GetMapping("/search")
-    public ApiResponse<CursorResponse<IngredientResponse>> search(
+    public ApiResponse<CursorResponse<IngredientResponse>> searchIngredient(
             @RequestParam(name = "q", required = false) String q,
             @RequestParam(name = "categoryId", required = false) UUID categoryId,
             @RequestParam(name = "cursor", required = false) UUID cursor,
@@ -32,56 +32,56 @@ public class IngredientController {
         return ApiResponse.<CursorResponse<IngredientResponse>>builder()
                 .code(IngredientResponseCode.INGREDIENT_SEARCH_SUCCESS.getCode())
                 .message(IngredientResponseCode.INGREDIENT_SEARCH_SUCCESS.getMessage())
-                .data(ingredientService.search(q, categoryId, cursor, size))
+                .data(ingredientService.searchIngredient(q, categoryId, cursor, size))
                 .build();
     }
 
     // GET /v1/ingredients/barcode/{code}
     @GetMapping("/barcode/{code}")
-    public ApiResponse<IngredientResponse> getByBarcode(@PathVariable("code") String code) {
+    public ApiResponse<IngredientResponse> getIngredientByBarcode(@PathVariable("code") String code) {
         return ApiResponse.<IngredientResponse>builder()
                 .code(IngredientResponseCode.INGREDIENT_BARCODE_SUCCESS.getCode())
                 .message(IngredientResponseCode.INGREDIENT_BARCODE_SUCCESS.getMessage())
-                .data(ingredientService.getByBarcode(code))
+                .data(ingredientService.getIngredientByBarcode(code))
                 .build();
     }
 
     // GET /v1/ingredients/{id}
     @GetMapping("/{id}")
-    public ApiResponse<IngredientResponse> getById(@PathVariable("id") UUID id) {
+    public ApiResponse<IngredientResponse> getIngredientById(@PathVariable("id") UUID id) {
         return ApiResponse.<IngredientResponse>builder()
                 .code(IngredientResponseCode.INGREDIENT_GET_SUCCESS.getCode())
                 .message(IngredientResponseCode.INGREDIENT_GET_SUCCESS.getMessage())
-                .data(ingredientService.getById(id))
+                .data(ingredientService.getIngredientById(id))
                 .build();
     }
 
     // POST /v1/ingredients
     @PostMapping
-    public ApiResponse<IngredientResponse> create(@Valid @RequestBody IngredientCreateRequest request) {
+    public ApiResponse<IngredientResponse> createIngredient(@Valid @RequestBody IngredientCreateRequest request) {
         return ApiResponse.<IngredientResponse>builder()
                 .code(IngredientResponseCode.INGREDIENT_CREATE_SUCCESS.getCode())
                 .message(IngredientResponseCode.INGREDIENT_CREATE_SUCCESS.getMessage())
-                .data(ingredientService.create(request))
+                .data(ingredientService.createIngredient(request))
                 .build();
     }
 
     // PUT /v1/ingredients/{id}
     @PutMapping("/{id}")
-    public ApiResponse<IngredientResponse> update(
+    public ApiResponse<IngredientResponse> updateIngredient(
             @PathVariable("id") UUID id,
             @Valid @RequestBody IngredientUpdateRequest request) {
         return ApiResponse.<IngredientResponse>builder()
                 .code(IngredientResponseCode.INGREDIENT_UPDATE_SUCCESS.getCode())
                 .message(IngredientResponseCode.INGREDIENT_UPDATE_SUCCESS.getMessage())
-                .data(ingredientService.update(id, request))
+                .data(ingredientService.updateIngredient(id, request))
                 .build();
     }
 
     // DELETE /v1/ingredients/{id}
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable("id") UUID id) {
-        ingredientService.delete(id);
+    public ApiResponse<Void> deleteIngredient(@PathVariable("id") UUID id) {
+        ingredientService.deleteIngredient(id);
         return ApiResponse.<Void>builder()
                 .code(IngredientResponseCode.INGREDIENT_DELETE_SUCCESS.getCode())
                 .message(IngredientResponseCode.INGREDIENT_DELETE_SUCCESS.getMessage())

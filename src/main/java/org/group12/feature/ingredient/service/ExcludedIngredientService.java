@@ -29,14 +29,14 @@ public class ExcludedIngredientService {
     private final AppUtil appUtil;
 
     @Transactional(readOnly = true)
-    public List<ExcludedIngredientResponse> getMine() {
+    public List<ExcludedIngredientResponse> getMyExcludedIngredients() {
         UUID userId = appUtil.userIdFromAuthentication();
-        return excludedIngredientMapper.toResponses(
+        return excludedIngredientMapper.toExcludedIngredientResponses(
                 excludedIngredientRepository.findAllByUserIdOrderByCreatedAtAsc(userId));
     }
 
     @Transactional
-    public ExcludedIngredientResponse add(ExcludedIngredientCreateRequest request) {
+    public ExcludedIngredientResponse addExcludedIngredient(ExcludedIngredientCreateRequest request) {
         UUID userId = appUtil.userIdFromAuthentication();
         String name = request.getName().trim();
 
@@ -50,11 +50,11 @@ public class ExcludedIngredientService {
                 .user(userRepository.getReferenceById(userId))
                 .build();
 
-        return excludedIngredientMapper.toResponse(excludedIngredientRepository.save(entity));
+        return excludedIngredientMapper.toExcludedIngredientResponse(excludedIngredientRepository.save(entity));
     }
 
     @Transactional
-    public void remove(UUID id) {
+    public void removeExcludedIngredient(UUID id) {
         UUID userId = appUtil.userIdFromAuthentication();
         ExcludedIngredient entity = excludedIngredientRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(ExcludedIngredientNotFoundException::new);
