@@ -164,7 +164,6 @@ public class InitData implements CommandLineRunner {
         ingredientRepository.saveAll(ingredients);
     }
 
-    /** Vài nguyên liệu loại trừ cho tài khoản admin để test API. */
     private void initExcludedIngredients() {
         if (excludedIngredientRepository.count() > 0) {
             return;
