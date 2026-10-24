@@ -18,7 +18,8 @@ import org.group12.feature.cookbook.validation.annotation.ValidSavedRecipeCreate
 @ValidSavedRecipeCreateRequest
 public class SavedRecipeCreateRequest {
 
-    private UUID externalId;
+    /** Id công thức bên API ngoài (chuỗi, ví dụ "716429"). */
+    private String externalId;
 
     private UUID recipeId;
 }
