@@ -13,13 +13,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @Builder
-@Schema
+@Schema(description = "Request body for creating or updating a cuisine")
 public class CuisineRequest {
+
+    @Schema(description = "Unique code: uppercase letters, digits and underscores", example = "JAPANESE")
     @NotBlank(message = "Code is required")
     @Size(max = 50, message = "Code must not exceed 50 characters")
     @Pattern(regexp = "^[A-Z0-9_]+$", message = "Code must contain only uppercase letters, digits and underscores")
     private String code;
 
+    @Schema(description = "Display name of the cuisine", example = "Japanese")
     @NotBlank(message = "Name is required")
     @Size(max = 100, message = "Name must not exceed 100 characters")
     private String name;

@@ -12,8 +12,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @Builder
-@Schema
+@Schema(description = "Request body for renaming a shopping list")
 public class ShoppingListUpdateRequest {
+
+    @Schema(description = "New name of the shopping list", example = "Saturday groceries")
     @NotBlank(message = "Name is required")
     @Size(max = 255, message = "Name must not exceed 255 characters")
     private String name;

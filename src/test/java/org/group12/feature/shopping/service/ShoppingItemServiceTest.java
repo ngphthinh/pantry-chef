@@ -55,7 +55,7 @@ class ShoppingItemServiceTest {
     void create_setsPendingStatusIdListAndTrimsName() {
         ShoppingList list = ShoppingList.builder().id(LIST_ID).name("Weekend").build();
         ShoppingItemCreateRequest request = new ShoppingItemCreateRequest("  Milk ", 2.0, Unit.L);
-        ShoppingItem mapped = ShoppingItem.builder().name("  Milk ").quantity(2.0).unit(Unit.L).build();
+        ShoppingItem mapped = ShoppingItem.builder().name("  Milk ").quantity( 2.0).unit(Unit.L).build();
         ShoppingItemResponse response = ShoppingItemResponse.builder().name("Milk").build();
 
         when(shoppingListService.getOwnedList(LIST_ID)).thenReturn(list);

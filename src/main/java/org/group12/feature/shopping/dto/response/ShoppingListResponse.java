@@ -13,7 +13,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @Data
 @Builder
-@Schema
 public class ShoppingListResponse {
     private UUID id;
     private String name;
