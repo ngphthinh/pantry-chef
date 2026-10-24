@@ -13,6 +13,9 @@ import org.group12.feature.auth.enums.ThemeMode;
 import org.group12.feature.auth.repository.RoleRepository;
 import org.group12.feature.auth.repository.UserRepository;
 import org.group12.feature.auth.service.AuthenticationService;
+import org.group12.feature.cookbook.entity.SavedRecipe;
+import org.group12.feature.cookbook.repository.CollectionRepository;
+import org.group12.feature.cookbook.repository.SavedRecipeRepository;
 import org.group12.feature.mealplan.entity.MealPlan;
 import org.group12.feature.mealplan.entity.MealPlanEntry;
 import org.group12.feature.mealplan.enums.MealType;
@@ -63,6 +66,8 @@ public class InitData implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final PantryItemRepository pantryItemRepository;
+    private final SavedRecipeRepository savedRecipeRepository;
+    private final CollectionRepository collectionRepository;
 
     private final AppUtil appUtil;
     private final RecipeRepository recipeRepository;
@@ -78,13 +83,15 @@ public class InitData implements CommandLineRunner {
     private String PASSWORD;
     @Value("${spring.jpa.hibernate.ddl-auto}")
     private String initData;
+
     @Override
 
     public void run(String... args) throws Exception {
         if (!"create".equals(initData) && !"create-drop".equals(initData)) {
             log.info("Skipping data initialization because spring.jpa.hibernate.ddl-auto is not 'create' or 'create-drop'");
 
-        }else {
+
+        } else {
             initRoles();
             initUsers();
             initCuisines();
@@ -95,9 +102,13 @@ public class InitData implements CommandLineRunner {
             initRecipes();
             initPantryItems();
             initMealPlans();
+            initSavedRecipes();
+            initCollections();
+            log.info("Data initialization completed successfully.");
         }
 
     }
+
     private void initSyncStatuses() {
         Map<String, String> statuses = new LinkedHashMap<>();
         statuses.put("PENDING", "Chờ đồng bộ");
@@ -124,6 +135,7 @@ public class InitData implements CommandLineRunner {
             log.info("Seeded {} sync statuses", missing.size());
         }
     }
+
     private void initIngredientCategories() {
         if (ingredientCategoryRepository.count() == 0) {
             List<String> rows = new ArrayList<>(List.of(
@@ -145,6 +157,7 @@ public class InitData implements CommandLineRunner {
             ingredientCategoryRepository.saveAll(categories);
         }
     }
+
     private void initIngredients() {
         if (ingredientRepository.count() > 0) {
             return;
@@ -193,7 +206,9 @@ public class InitData implements CommandLineRunner {
         ingredientRepository.saveAll(ingredients);
     }
 
-    /** Vài nguyên liệu loại trừ cho tài khoản admin để test API. */
+    /**
+     * Vài nguyên liệu loại trừ cho tài khoản admin để test API.
+     */
     private void initExcludedIngredients() {
         if (excludedIngredientRepository.count() > 0) {
             return;
@@ -208,6 +223,7 @@ public class InitData implements CommandLineRunner {
                                         .build())
                                 .toList()));
     }
+
     private void initUsers() {
         Faker fakeData = new Faker();
         int numberOfUsers = 100;
@@ -455,5 +471,86 @@ public class InitData implements CommandLineRunner {
         mealPlanRepository.saveAll(plans);
         log.info("Seeded {} meal plans ({} entries) for admin", plans.size(),
                 plans.stream().mapToInt(p -> p.getEntries().size()).sum());
+    }
+
+    private static final List<String> NOTES = Arrays.asList(
+            "Nêm ít muối hơn lần sau.", "Cả nhà đều thích.", "Nên ướp lâu hơn.",
+            "Hợp để nấu cuối tuần.", "Giảm đường một chút.", null, null);
+
+    private void initSavedRecipes() {
+        if (savedRecipeRepository.count() > 0) {
+            return;
+        }
+        User admin = userRepository.findByEmail("admin@gmail.com").orElse(null);
+        List<Recipe> recipes = new ArrayList<>(recipeRepository.findAll());
+        if (admin == null || recipes.isEmpty()) {
+            log.warn("Skip seeding saved recipes: admin or recipes missing");
+            return;
+        }
+
+        // công thức custom của người khác không được lưu vào sách của admin
+        recipes.removeIf(r -> r.isCustom()
+                && (r.getOwner() == null || !r.getOwner().getId().equals(admin.getId())));
+
+        SyncStatus synced = syncStatusRepository.findAllByCodeIn(Set.of("SYNCED")).stream()
+                .findFirst().orElse(null);
+
+        Collections.shuffle(recipes, new Random(42));   // seed cố định → lặp lại được
+        Random random = new Random(42);
+
+        List<SavedRecipe> saved = recipes.stream()
+                .limit(15)
+                .map(recipe -> SavedRecipe.builder()
+                        .id(appUtil.generateUUID())
+                        .user(admin)
+                        .recipe(recipe)
+                        .rating(random.nextInt(5) + 1)                       // 1..5
+                        .note(NOTES.get(random.nextInt(NOTES.size())))       // có thể null
+                        .favorite(random.nextInt(100) < 30)                  // ~30% yêu thích
+                        .syncStatus(synced)
+                        .build())
+                .toList();
+
+        savedRecipeRepository.saveAll(saved);
+        log.info("Seeded {} saved recipes for admin", saved.size());
+    }
+    private static final List<String> COLLECTION_NAMES = List.of(
+            "Món yêu thích", "Nấu nhanh ngày thường", "Cuối tuần", "Món chay", "Tiệc gia đình");
+
+    private void initCollections() {
+        if (collectionRepository.count() > 0) {
+            return;
+        }
+        User admin = userRepository.findByEmail("admin@gmail.com").orElse(null);
+        if (admin == null) {
+            log.warn("Skip seeding collections: admin missing");
+            return;
+        }
+        List<SavedRecipe> savedRecipes = savedRecipeRepository.findAll().stream()
+                .filter(s -> s.getUser().getId().equals(admin.getId()))
+                .collect(Collectors.toCollection(ArrayList::new));
+        if (savedRecipes.isEmpty()) {
+            log.warn("Skip seeding collections: no saved recipes");
+            return;
+        }
+
+        Collections.shuffle(savedRecipes, new Random(42));   // seed cố định → lặp lại được
+        Random random = new Random(42);
+
+        List<org.group12.feature.cookbook.entity.Collection> collections = new ArrayList<>();
+        for (String name : COLLECTION_NAMES) {
+            int size = Math.min(savedRecipes.size(), random.nextInt(4) + 2);   // 2..5 món
+            Collections.shuffle(savedRecipes, new Random(random.nextLong()));
+
+            collections.add(org.group12.feature.cookbook.entity.Collection.builder()
+                    .id(appUtil.generateUUID())
+                    .name(name)
+                    .user(admin)
+                    .savedRecipes(new HashSet<>(savedRecipes.subList(0, size)))
+                    .build());
+        }
+
+        collectionRepository.saveAll(collections);
+        log.info("Seeded {} collections for admin", collections.size());
     }
 }

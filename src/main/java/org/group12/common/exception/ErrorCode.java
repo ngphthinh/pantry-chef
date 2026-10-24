@@ -31,7 +31,10 @@ public enum ErrorCode implements BaseErrorCode{
     UPLOAD_MEDIA_FAILED("MEDIA_001", "Upload media failed", HttpStatus.INTERNAL_SERVER_ERROR),
     LOAD_PROMPT_FAILED("PROMPT_001", "Load prompt failed", HttpStatus.INTERNAL_SERVER_ERROR),
     CONTENT_BLOCKED("GEN_004", "Nội dung bị chặn", HttpStatus.UNPROCESSABLE_ENTITY),
-    ;
+    UNIT_INCOMPATIBLE("UNIT_001", "Cannot convert between these units", HttpStatus.BAD_REQUEST)
+
+
+            ;
     private final String code;
     private final String message;
     private final HttpStatus httpStatus;

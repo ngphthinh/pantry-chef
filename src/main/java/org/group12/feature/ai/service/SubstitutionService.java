@@ -30,7 +30,7 @@ public class SubstitutionService {
     private final ChatClient chatClient;
     private final PromptLoader promptLoader;
     private final ContentGuard contentGuard;
-    private final RecipeRepository recipeRepository;   // bỏ nếu recipe chỉ đến từ API ngoài
+    private final RecipeRepository recipeRepository;
     private final String promptPath;
     private final double minConfidence;
     private final int maxResults;

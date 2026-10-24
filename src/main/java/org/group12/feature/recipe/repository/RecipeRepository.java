@@ -12,5 +12,6 @@ public interface RecipeRepository extends JpaRepository<Recipe, UUID> {
 
     @Query("select r from Recipe r where lower(r.title) in :titles")
     List<Recipe> findByLowerTitleIn(@Param("titles") Collection<String> titles);
-    Optional<Recipe> findByExternalId(String externalId);
+    Optional<Recipe> findByExternalId(UUID externalId);
+
 }
