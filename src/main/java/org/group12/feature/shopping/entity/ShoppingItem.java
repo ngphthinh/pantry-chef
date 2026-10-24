@@ -24,7 +24,7 @@ public class ShoppingItem extends SoftDeletableEntity {
     private UUID id;
     @Column(nullable = false)
     private String name;
-    private int quantity;
+    private Double quantity;
     @Enumerated(EnumType.STRING)
     private Unit unit;
     @Enumerated(EnumType.STRING)

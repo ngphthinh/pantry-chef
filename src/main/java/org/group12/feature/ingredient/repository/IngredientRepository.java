@@ -17,6 +17,10 @@ public interface IngredientRepository extends JpaRepository<Ingredient, UUID>, J
 
     boolean existsByBarcodeAndIdNot(String barcode, UUID id);
 
-    @Query(value = "SELECT EXISTS (SELECT 1 FROM ingredients WHERE category_id = :categoryId)", nativeQuery = true)
+    @Query("""
+            SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END
+            FROM Ingredient i
+            WHERE i.category.id = :categoryId
+            """)
     boolean existsAnyByCategoryId(@Param("categoryId") UUID categoryId);
 }

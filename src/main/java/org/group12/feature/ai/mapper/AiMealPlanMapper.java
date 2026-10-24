@@ -6,12 +6,11 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 @Mapper(componentModel = "spring")
-public interface MealPlanMapper {
+public interface AiMealPlanMapper  {
 
     @Mapping(target = "date", expression = "java(weekStart.plus(item.getDayIndex(), java.time.temporal.ChronoUnit.DAYS))")
     @Mapping(target = "mealType", source = "item.mealType")

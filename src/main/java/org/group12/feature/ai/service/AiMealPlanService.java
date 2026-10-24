@@ -8,7 +8,7 @@ import org.group12.feature.ai.dto.request.AiMealPlanRequest;
 import org.group12.feature.ai.dto.response.AiMealPlanDraft;
 import org.group12.feature.ai.dto.response.MealPlanResponse;
 import org.group12.feature.ai.exception.AiProviderException;
-import org.group12.feature.ai.mapper.MealPlanMapper;
+import org.group12.feature.ai.mapper.AiMealPlanMapper;
 import org.group12.feature.ingredient.entity.ExcludedIngredient;
 import org.group12.feature.ingredient.repository.ExcludedIngredientRepository;
 import org.group12.feature.mealplan.enums.MealType;
@@ -42,7 +42,7 @@ public class AiMealPlanService {
     private final ExcludedIngredientRepository excludedIngredientRepository;
     private final CuisineRepository cuisineRepository;
     private final RecipeRepository recipeRepository;
-    private final MealPlanMapper mealPlanMapper;
+    private final AiMealPlanMapper mealPlanMapper;
     private final AppUtil appUtil;
     private final String promptPath;
     private final int maxPantryItems;
@@ -55,7 +55,7 @@ public class AiMealPlanService {
             ExcludedIngredientRepository excludedIngredientRepository,
             CuisineRepository cuisineRepository,
             RecipeRepository recipeRepository,
-            MealPlanMapper mealPlanMapper,
+            AiMealPlanMapper mealPlanMapper,
             AppUtil appUtil,
             @Value("${app.ai.prompt.path.meal-plan}") String promptPath,
             @Value("${app.ai.meal-plan.max-pantry-items}") int maxPantryItems) {
@@ -75,7 +75,7 @@ public class AiMealPlanService {
     public MealPlanResponse generate(AiMealPlanRequest request) {
         UUID userId = appUtil.userIdFromAuthentication();
 
-        List<String> pantry = pantryItemRepository.findByUserId(userId).stream()
+        List<String> pantry = pantryItemRepository.findByUserIdNotIngredientCategory(userId).stream()
                 .map(p -> p.getIngredient().getName())
                 .distinct()
                 .limit(maxPantryItems)

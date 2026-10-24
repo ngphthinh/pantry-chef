@@ -13,6 +13,10 @@ import org.group12.feature.auth.enums.ThemeMode;
 import org.group12.feature.auth.repository.RoleRepository;
 import org.group12.feature.auth.repository.UserRepository;
 import org.group12.feature.auth.service.AuthenticationService;
+import org.group12.feature.mealplan.entity.MealPlan;
+import org.group12.feature.mealplan.entity.MealPlanEntry;
+import org.group12.feature.mealplan.enums.MealType;
+import org.group12.feature.mealplan.repository.MealPlanRepository;
 import org.group12.feature.pantry.entity.PantryItem;
 import org.group12.feature.pantry.enums.StorageLocation;
 import org.group12.feature.pantry.repository.PantryItemRepository;
@@ -40,6 +44,8 @@ import org.group12.feature.ingredient.repository.ExcludedIngredientRepository;
 import org.group12.feature.ingredient.repository.IngredientCategoryRepository;
 import org.group12.feature.ingredient.repository.IngredientRepository;
 
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,7 +71,7 @@ public class InitData implements CommandLineRunner {
     private final IngredientRepository ingredientRepository;
     private final ExcludedIngredientRepository excludedIngredientRepository;
     private final SyncStatusRepository syncStatusRepository;
-
+    private final MealPlanRepository mealPlanRepository;
 
 
     @Value("${app.password-default}")
@@ -77,7 +83,7 @@ public class InitData implements CommandLineRunner {
     public void run(String... args) throws Exception {
         if (!"create".equals(initData) && !"create-drop".equals(initData)) {
             log.info("Skipping data initialization because spring.jpa.hibernate.ddl-auto is not 'create' or 'create-drop'");
-            return;
+
         }else {
             initRoles();
             initUsers();
@@ -88,7 +94,9 @@ public class InitData implements CommandLineRunner {
             initExcludedIngredients();
             initRecipes();
             initPantryItems();
+            initMealPlans();
         }
+
     }
     private void initSyncStatuses() {
         Map<String, String> statuses = new LinkedHashMap<>();
@@ -380,7 +388,7 @@ public class InitData implements CommandLineRunner {
                         .id(appUtil.generateUUID())
                         .user(admin)
                         .ingredient(ing)
-                        .quantity((double) (random.nextInt(500) + 1))
+                        .quantity((random.nextDouble(500) + 1))
                         .unit(ing.getDefaultUnit())
                         .location(locations[random.nextInt(locations.length)])
                         .expiryDate(today.plusDays(random.nextInt(30) + 1))
@@ -390,5 +398,62 @@ public class InitData implements CommandLineRunner {
 
         pantryItemRepository.saveAll(items);
         log.info("Seeded {} pantry items for admin", items.size());
+    }
+
+    private void initMealPlans() {
+        if (mealPlanRepository.count() > 0) {
+            return;
+        }
+        User admin = userRepository.findByEmail("admin@gmail.com").orElse(null);
+        List<Recipe> recipes = new ArrayList<>(recipeRepository.findAll());
+        if (admin == null || recipes.isEmpty()) {
+            log.warn("Skip seeding meal plans: admin or recipes missing");
+            return;
+        }
+
+        // công thức custom của người khác không được dùng cho admin
+        recipes.removeIf(r -> r.isCustom()
+                && (r.getOwner() == null || !r.getOwner().getId().equals(admin.getId())));
+        if (recipes.isEmpty()) {
+            log.warn("Skip seeding meal plans: no usable recipes");
+            return;
+        }
+
+        Collections.shuffle(recipes, new Random(42));   // seed cố định → lặp lại được
+        Random random = new Random(42);
+        LocalDate today = LocalDate.now();
+        LocalDate thisMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        MealType[] meals = MealType.values();
+        int cursor = 0;
+
+        List<MealPlan> plans = new ArrayList<>();
+        for (int week = 0; week < 2; week++) {               // tuần này + tuần sau
+            MealPlan plan = MealPlan.builder()
+                    .id(appUtil.generateUUID())
+                    .weekStart(thisMonday.plusWeeks(week))
+                    .user(admin)
+                    .build();
+
+            for (int day = 0; day < 7; day++) {
+                LocalDate date = plan.getWeekStart().plusDays(day);
+                for (MealType meal : meals) {
+                    Recipe recipe = recipes.get(cursor++ % recipes.size());   // xoay vòng, ít trùng món
+                    plan.getEntries().add(MealPlanEntry.builder()
+                            .id(appUtil.generateUUID())
+                            .mealPlan(plan)
+                            .recipe(recipe)
+                            .date(date)
+                            .mealType(meal)
+                            .servings(random.nextInt(4) + 1)
+                            .cooked(date.isBefore(today))      // ngày đã qua = đã nấu
+                            .build());
+                }
+            }
+            plans.add(plan);
+        }
+
+        mealPlanRepository.saveAll(plans);
+        log.info("Seeded {} meal plans ({} entries) for admin", plans.size(),
+                plans.stream().mapToInt(p -> p.getEntries().size()).sum());
     }
 }
