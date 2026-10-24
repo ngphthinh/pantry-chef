@@ -16,15 +16,14 @@ import org.group12.feature.cookbook.mapper.SavedRecipeMapper;
 import org.group12.feature.cookbook.repository.SavedRecipeRepository;
 import org.group12.feature.recipe.entity.Recipe;
 import org.group12.feature.recipe.repository.RecipeRepository;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-
+@PreAuthorize("hasRole('USER')")
 @Service
 @RequiredArgsConstructor
 public class SavedRecipeService {

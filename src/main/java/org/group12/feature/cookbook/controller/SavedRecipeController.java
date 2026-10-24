@@ -31,10 +31,10 @@ public class SavedRecipeController {
     public ApiResponse<SavedRecipeResponse> create(
             @Valid @RequestBody SavedRecipeCreateRequest request) {
         return ApiResponse.<SavedRecipeResponse>builder()
-                        .code(CookbookResponseCode.SAVE_RECIPE_SUCCESS.getCode())
-                        .message(CookbookResponseCode.SAVE_RECIPE_SUCCESS.getMessage())
-                        .data(service.save(request))
-                        .build();
+                .code(CookbookResponseCode.SAVED_RECIPE_CREATE_SUCCESS.getCode())
+                .message(CookbookResponseCode.SAVED_RECIPE_CREATE_SUCCESS.getMessage())
+                .data(service.save(request))
+                .build();
     }
 
     @GetMapping
@@ -44,8 +44,8 @@ public class SavedRecipeController {
             @RequestParam(required = false) Boolean favorite,
             @RequestParam(required = false) UUID collectionId) {
         return ApiResponse.<CursorResponse<SavedRecipeResponse>>builder()
-                .code(CookbookResponseCode.LIST_SAVED_RECIPES_SUCCESS.getCode())
-                .message(CookbookResponseCode.LIST_SAVED_RECIPES_SUCCESS.getMessage())
+                .code(CookbookResponseCode.SAVED_RECIPE_LIST_SUCCESS.getCode())
+                .message(CookbookResponseCode.SAVED_RECIPE_LIST_SUCCESS.getMessage())
                 .data(service.list(cursor, size, favorite, collectionId))
                 .build();
     }
@@ -53,8 +53,8 @@ public class SavedRecipeController {
     @GetMapping("/{id}")
     public ApiResponse<SavedRecipeDetailResponse> getDetail(@PathVariable UUID id) {
         return ApiResponse.<SavedRecipeDetailResponse>builder()
-                .code(CookbookResponseCode.GET_SAVED_RECIPE_SUCCESS.getCode())
-                .message(CookbookResponseCode.GET_SAVED_RECIPE_SUCCESS.getMessage())
+                .code(CookbookResponseCode.SAVED_RECIPE_GET_SUCCESS.getCode())
+                .message(CookbookResponseCode.SAVED_RECIPE_GET_SUCCESS.getMessage())
                 .data(service.getDetail(id))
                 .build();
     }
@@ -70,8 +70,8 @@ public class SavedRecipeController {
             @PathVariable UUID id,
             @Valid @RequestBody SavedRecipeUpdateRequest request) {
         return ApiResponse.<SavedRecipeResponse>builder()
-                .code(CookbookResponseCode.UPDATE_SAVED_RECIPE_SUCCESS.getCode())
-                .message(CookbookResponseCode.UPDATE_SAVED_RECIPE_SUCCESS.getMessage())
+                .code(CookbookResponseCode.SAVED_RECIPE_UPDATE_SUCCESS.getCode())
+                .message(CookbookResponseCode.SAVED_RECIPE_UPDATE_SUCCESS.getMessage())
                 .data(service.update(id, request))
                 .build();
     }

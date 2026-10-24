@@ -23,8 +23,8 @@ public class CollectionController {
     @GetMapping
     public ApiResponse<List<CollectionResponse>> list() {
         return ApiResponse.<List<CollectionResponse>>builder()
-                .code(CookbookResponseCode.LIST_COLLECTIONS_SUCCESS.getCode())
-                .message(CookbookResponseCode.LIST_COLLECTIONS_SUCCESS.getMessage())
+                .code(CookbookResponseCode.COLLECTION_LIST_SUCCESS.getCode())
+                .message(CookbookResponseCode.COLLECTION_LIST_SUCCESS.getMessage())
                 .data(service.list())
                 .build();
     }
@@ -33,8 +33,8 @@ public class CollectionController {
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<CollectionResponse> create(@Valid @RequestBody CollectionCreateRequest request) {
         return ApiResponse.<CollectionResponse>builder()
-                .code(CookbookResponseCode.CREATE_COLLECTION_SUCCESS.getCode())
-                .message(CookbookResponseCode.CREATE_COLLECTION_SUCCESS.getMessage())
+                .code(CookbookResponseCode.COLLECTION_CREATE_SUCCESS.getCode())
+                .message(CookbookResponseCode.COLLECTION_CREATE_SUCCESS.getMessage())
                 .data(service.create(request))
                 .build();
     }
@@ -44,8 +44,8 @@ public class CollectionController {
             @PathVariable UUID id,
             @Valid @RequestBody CollectionUpdateRequest request) {
         return ApiResponse.<CollectionResponse>builder()
-                .code(CookbookResponseCode.UPDATE_COLLECTION_SUCCESS.getCode())
-                .message(CookbookResponseCode.UPDATE_COLLECTION_SUCCESS.getMessage())
+                .code(CookbookResponseCode.COLLECTION_UPDATE_SUCCESS.getCode())
+                .message(CookbookResponseCode.COLLECTION_UPDATE_SUCCESS.getMessage())
                 .data(service.update(id, request))
                 .build();
     }
@@ -61,8 +61,8 @@ public class CollectionController {
             @PathVariable UUID id,
             @PathVariable UUID savedRecipeId) {
         return ApiResponse.<CollectionResponse>builder()
-                .code(CookbookResponseCode.ADD_RECIPE_TO_COLLECTION_SUCCESS.getCode())
-                .message(CookbookResponseCode.ADD_RECIPE_TO_COLLECTION_SUCCESS.getMessage())
+                .code(CookbookResponseCode.COLLECTION_RECIPE_ADD_SUCCESS.getCode())
+                .message(CookbookResponseCode.COLLECTION_RECIPE_ADD_SUCCESS.getMessage())
                 .data(service.addRecipe(id, savedRecipeId))
                 .build();
     }
@@ -72,8 +72,8 @@ public class CollectionController {
             @PathVariable UUID id,
             @PathVariable UUID savedRecipeId) {
         return ApiResponse.<CollectionResponse>builder()
-                .code(CookbookResponseCode.REMOVE_RECIPE_FROM_COLLECTION_SUCCESS.getCode())
-                .message(CookbookResponseCode.REMOVE_RECIPE_FROM_COLLECTION_SUCCESS.getMessage())
+                .code(CookbookResponseCode.COLLECTION_RECIPE_REMOVE_SUCCESS.getCode())
+                .message(CookbookResponseCode.COLLECTION_RECIPE_REMOVE_SUCCESS.getMessage())
                 .data(service.removeRecipe(id, savedRecipeId))
                 .build();
     }

@@ -11,14 +11,17 @@ import org.group12.feature.cookbook.entity.SavedRecipe;
 import org.group12.feature.cookbook.exception.CollectionNameDuplicateException;
 import org.group12.feature.cookbook.exception.CollectionNotFoundException;
 import org.group12.feature.cookbook.exception.SavedRecipeNotFoundException;
+import org.group12.feature.cookbook.mapper.CollectionMapper;
 import org.group12.feature.cookbook.repository.CollectionRepository;
 import org.group12.feature.cookbook.repository.SavedRecipeRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
+@PreAuthorize("hasRole('USER')")
 @Service
 @RequiredArgsConstructor
 public class CollectionService {
@@ -26,6 +29,7 @@ public class CollectionService {
     private final AppUtil appUtil;
     private final UserRepository userRepository;
     private final SavedRecipeRepository savedRecipeRepository;
+    private final CollectionMapper collectionMapper;
 
 
     @Transactional(readOnly = true)
@@ -44,13 +48,12 @@ public class CollectionService {
         }
 
         Collection collection = Collection.builder()
-                .id(UUID.randomUUID())
+                .id(appUtil.generateUUID())
                 .name(name)
                 .user(userRepository.getReferenceById(userId))
                 .build();
 
-        collection = collectionRepository.save(collection);
-        return new CollectionResponse(collection.getId(), collection.getName(), 0);
+        return collectionMapper.toCollectionResponse(collectionRepository.save(collection), 0);
     }
 
     @Transactional
@@ -60,15 +63,14 @@ public class CollectionService {
                 .orElseThrow(CollectionNotFoundException::new);
 
         String name = req.getName().trim();
-        if (collectionRepository.existsByUserIdAndNameIgnoreCaseAndIdNot(userId, name, id)){
+        if (collectionRepository.existsByUserIdAndNameIgnoreCaseAndIdNot(userId, name, id)) {
             throw new CollectionNameDuplicateException();
         }
 
         collection.setName(name);
         collectionRepository.save(collection);
 
-        return new CollectionResponse(collection.getId(), collection.getName(),
-                collectionRepository.countRecipes(id));
+        return collectionMapper.toCollectionResponse(collection, (int) collectionRepository.countRecipes(id));
     }
 
     @Transactional
@@ -91,8 +93,7 @@ public class CollectionService {
         collection.getSavedRecipes().add(savedRecipe);
         collectionRepository.save(collection);
 
-        return new CollectionResponse(collection.getId(), collection.getName(),
-                collection.getSavedRecipes().size());
+        return collectionMapper.toCollectionResponse(collection, (int) collectionRepository.countRecipes(id));
     }
 
     @Transactional
@@ -105,10 +106,8 @@ public class CollectionService {
         collection.getSavedRecipes().removeIf(sr -> sr.getId().equals(savedRecipeId));
         collectionRepository.save(collection);
 
-        return new CollectionResponse(collection.getId(), collection.getName(),
-                collection.getSavedRecipes().size());
+        return collectionMapper.toCollectionResponse(collection, (int) collectionRepository.countRecipes(id));
     }
-
 
 
 }
