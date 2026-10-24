@@ -58,6 +58,7 @@ public class IngredientController {
 
     // POST /v1/ingredients
     @PostMapping
+    @ResponseStatus(code = org.springframework.http.HttpStatus.CREATED)
     public ApiResponse<IngredientResponse> createIngredient(@Valid @RequestBody IngredientCreateRequest request) {
         return ApiResponse.<IngredientResponse>builder()
                 .code(IngredientResponseCode.INGREDIENT_CREATE_SUCCESS.getCode())
@@ -80,11 +81,8 @@ public class IngredientController {
 
     // DELETE /v1/ingredients/{id}
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> deleteIngredient(@PathVariable("id") UUID id) {
+    @ResponseStatus(code = org.springframework.http.HttpStatus.NO_CONTENT)
+    public void deleteIngredient(@PathVariable("id") UUID id) {
         ingredientService.deleteIngredient(id);
-        return ApiResponse.<Void>builder()
-                .code(IngredientResponseCode.INGREDIENT_DELETE_SUCCESS.getCode())
-                .message(IngredientResponseCode.INGREDIENT_DELETE_SUCCESS.getMessage())
-                .build();
     }
 }

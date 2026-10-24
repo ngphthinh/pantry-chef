@@ -70,19 +70,25 @@ public class InitData implements CommandLineRunner {
 
     @Value("${app.password-default}")
     private String PASSWORD;
-
+    @Value("${spring.jpa.hibernate.ddl-auto}")
+    private String initData;
     @Override
 
     public void run(String... args) throws Exception {
-        initRoles();
-        initUsers();
-        initCuisines();
-        initIngredientCategories();
-        initSyncStatuses();
-        initIngredients();
-        initExcludedIngredients();
-        initRecipes();
-        initPantryItems();
+        if (!"create".equals(initData) && !"create-drop".equals(initData)) {
+            log.info("Skipping data initialization because spring.jpa.hibernate.ddl-auto is not 'create' or 'create-drop'");
+            return;
+        }else {
+            initRoles();
+            initUsers();
+            initCuisines();
+            initIngredientCategories();
+            initSyncStatuses();
+            initIngredients();
+            initExcludedIngredients();
+            initRecipes();
+            initPantryItems();
+        }
     }
     private void initSyncStatuses() {
         Map<String, String> statuses = new LinkedHashMap<>();

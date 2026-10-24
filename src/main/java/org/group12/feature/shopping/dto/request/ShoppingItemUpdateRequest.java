@@ -27,7 +27,7 @@ public class ShoppingItemUpdateRequest {
     @Schema(description = "Quantity of the shopping item", example = "2")
     @NotNull(message = "Quantity must not be null")
     @Positive(message = "Quantity must be greater than 0")
-    private Double quantity;
+    private int quantity;
 
     @Schema(description = "Unit of the shopping item", example = "L")
     @NotNull(message = "Unit must not be null")

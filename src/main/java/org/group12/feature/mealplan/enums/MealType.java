@@ -2,7 +2,6 @@ package org.group12.feature.mealplan.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-import java.util.Locale;
 
 public enum MealType {
     BREAKFAST, LUNCH, DINNER;
