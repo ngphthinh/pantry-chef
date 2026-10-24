@@ -1,4 +1,4 @@
-package org.group12.feature.feedback.dto;
+package org.group12.feature.feedback.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

@@ -4,7 +4,6 @@ import com.github.javafaker.Faker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.group12.common.utils.AppUtil;
-import org.group12.feature.auth.dto.request.UserCreateRequest;
 import org.group12.feature.auth.entity.Role;
 import org.group12.feature.auth.entity.User;
 import org.group12.feature.auth.enums.MeasurementSystem;
@@ -12,10 +11,12 @@ import org.group12.feature.auth.enums.RoleName;
 import org.group12.feature.auth.enums.ThemeMode;
 import org.group12.feature.auth.repository.RoleRepository;
 import org.group12.feature.auth.repository.UserRepository;
-import org.group12.feature.auth.service.AuthenticationService;
 import org.group12.feature.cookbook.entity.SavedRecipe;
 import org.group12.feature.cookbook.repository.CollectionRepository;
 import org.group12.feature.cookbook.repository.SavedRecipeRepository;
+import org.group12.feature.feedback.entity.Feedback;
+import org.group12.feature.feedback.enums.FeedbackType;
+import org.group12.feature.feedback.repository.FeedbackRepository;
 import org.group12.feature.mealplan.entity.MealPlan;
 import org.group12.feature.mealplan.entity.MealPlanEntry;
 import org.group12.feature.mealplan.enums.MealType;
@@ -32,13 +33,13 @@ import org.group12.feature.recipe.repository.CuisineRepository;
 import org.group12.feature.recipe.repository.RecipeRepository;
 import org.group12.feature.sysc.entity.SyncStatus;
 import org.group12.feature.sysc.repository.SyncStatusRepository;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.group12.common.enums.Unit;
 import org.group12.feature.ingredient.entity.ExcludedIngredient;
 import org.group12.feature.ingredient.entity.Ingredient;
@@ -61,6 +62,7 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Component
 public class InitData implements CommandLineRunner {
+    private final FeedbackRepository feedbackRepository;
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -86,10 +88,9 @@ public class InitData implements CommandLineRunner {
 
     @Override
 
-    public void run(String... args) throws Exception {
+    public void run(String @NonNull ... args) {
         if (!"create".equals(initData) && !"create-drop".equals(initData)) {
             log.info("Skipping data initialization because spring.jpa.hibernate.ddl-auto is not 'create' or 'create-drop'");
-
 
         } else {
             initRoles();
@@ -104,6 +105,8 @@ public class InitData implements CommandLineRunner {
             initMealPlans();
             initSavedRecipes();
             initCollections();
+            initFeedbacks();
+
             log.info("Data initialization completed successfully.");
         }
 
@@ -552,5 +555,54 @@ public class InitData implements CommandLineRunner {
 
         collectionRepository.saveAll(collections);
         log.info("Seeded {} collections for admin", collections.size());
+    }
+
+    private static final List<String> FEEDBACK_MESSAGES = List.of(
+            "Ứng dụng bị lỗi khi quét ảnh nguyên liệu.",
+            "Gợi ý thay thế nguyên liệu rất hữu ích.",
+            "Mong muốn thêm chế độ tối cho màn hình công thức.",
+            "Không thể lưu thực đơn tuần, báo lỗi 500.",
+            "Giao diện tủ nguyên liệu dễ dùng, cảm ơn nhóm.",
+            "Thông báo hết hạn đến chậm vài giờ.",
+            "Đề xuất thêm bộ lọc theo thời gian nấu.",
+            "Ảnh món ăn tải rất lâu trên mạng 4G.",
+            "Nút yêu thích đôi khi không phản hồi.",
+            "Công thức AI điều chỉnh khá chính xác.");
+
+    private static final List<String> APP_VERSIONS = List.of("1.0.0", "1.0.1", "1.1.0", "1.2.0");
+    private static final List<String> DEVICES = List.of(
+            "Pixel 7 / Android 14", "Galaxy S23 / Android 14",
+            "iPhone 14 / iOS 17", "iPhone 12 / iOS 16", "Redmi Note 12 / Android 13");
+
+    private void initFeedbacks() {
+        if (feedbackRepository.count() > 0) {
+            return;
+        }
+        List<User> users = userRepository.findAll(PageRequest.of(0, 20)).getContent();
+        if (users.isEmpty()) {
+            log.warn("Skip seeding feedbacks: no users");
+            return;
+        }
+
+        Random random = new Random(42);   // seed cố định → lặp lại được
+        FeedbackType[] types = FeedbackType.values();
+
+        List<Feedback> feedbacks = new ArrayList<>();
+        for (int i = 0; i < 40; i++) {
+            String message = FEEDBACK_MESSAGES.get(i % FEEDBACK_MESSAGES.size())
+                    + (i >= FEEDBACK_MESSAGES.size() ? " (#" + (i / FEEDBACK_MESSAGES.size() + 1) + ")" : "");
+
+            feedbacks.add(Feedback.builder()
+                    .id(appUtil.generateUUID())
+                    .type(types[random.nextInt(types.length)])
+                    .message(message)
+                    .appVersion(APP_VERSIONS.get(random.nextInt(APP_VERSIONS.size())))
+                    .deviceInfo(DEVICES.get(random.nextInt(DEVICES.size())))
+                    .user(users.get(random.nextInt(users.size())))
+                    .build());
+        }
+
+        feedbackRepository.saveAll(feedbacks);
+        log.info("Seeded {} feedbacks", feedbacks.size());
     }
 }
