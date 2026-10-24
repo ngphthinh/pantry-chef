@@ -10,6 +10,8 @@ public enum AiResponseCode implements ResponseCode {
     AI_RESPONSE_SUCCESS("AI_200", "AI response successfully"),
     AI_RESPONSE_ERROR("AI_500", "AI response error"),
     AI_RECOGNIZE_INGREDIENT_SUCCESS("AI_201", "Recognize ingredient successfully"),
+    AI_SUBSTITUTIONS_SUCCESS("AI_202", "Get substitutions successfully"),
+    AI_MEAL_PLAN_SUCCESS("AI_203", "Generate meal plan successfully"),
 
     ;
     private final String code;
