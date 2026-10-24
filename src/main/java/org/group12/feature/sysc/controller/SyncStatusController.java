@@ -20,11 +20,11 @@ public class SyncStatusController {
 
     // GET /v1/sync-statuses
     @GetMapping
-    public ApiResponse<List<SyncStatusResponse>> getAll() {
+    public ApiResponse<List<SyncStatusResponse>> getStatuses() {
         return ApiResponse.<List<SyncStatusResponse>>builder()
                 .code(SyncResponseCode.SYNC_STATUS_LIST_SUCCESS.getCode())
                 .message(SyncResponseCode.SYNC_STATUS_LIST_SUCCESS.getMessage())
-                .data(syncStatusService.getAll())
+                .data(syncStatusService.getStatuses())
                 .build();
     }
 }

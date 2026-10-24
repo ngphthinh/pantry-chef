@@ -21,28 +21,28 @@ public class ExcludedIngredientController {
 
     // GET /v1/users/me/excluded-ingredients
     @GetMapping
-    public ApiResponse<List<ExcludedIngredientResponse>> getMine() {
+    public ApiResponse<List<ExcludedIngredientResponse>> getMyExcludedIngredients() {
         return ApiResponse.<List<ExcludedIngredientResponse>>builder()
                 .code(IngredientResponseCode.EXCLUDED_LIST_SUCCESS.getCode())
                 .message(IngredientResponseCode.EXCLUDED_LIST_SUCCESS.getMessage())
-                .data(excludedIngredientService.getMine())
+                .data(excludedIngredientService.getMyExcludedIngredients())
                 .build();
     }
 
     // POST /v1/users/me/excluded-ingredients
     @PostMapping
-    public ApiResponse<ExcludedIngredientResponse> add(@Valid @RequestBody ExcludedIngredientCreateRequest request) {
+    public ApiResponse<ExcludedIngredientResponse> addExcludedIngredient(@Valid @RequestBody ExcludedIngredientCreateRequest request) {
         return ApiResponse.<ExcludedIngredientResponse>builder()
                 .code(IngredientResponseCode.EXCLUDED_CREATE_SUCCESS.getCode())
                 .message(IngredientResponseCode.EXCLUDED_CREATE_SUCCESS.getMessage())
-                .data(excludedIngredientService.add(request))
+                .data(excludedIngredientService.addExcludedIngredient(request))
                 .build();
     }
 
     // DELETE /v1/users/me/excluded-ingredients/{id}
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> remove(@PathVariable("id") UUID id) {
-        excludedIngredientService.remove(id);
+    public ApiResponse<Void> removeExcludedIngredient(@PathVariable("id") UUID id) {
+        excludedIngredientService.removeExcludedIngredient(id);
         return ApiResponse.<Void>builder()
                 .code(IngredientResponseCode.EXCLUDED_DELETE_SUCCESS.getCode())
                 .message(IngredientResponseCode.EXCLUDED_DELETE_SUCCESS.getMessage())

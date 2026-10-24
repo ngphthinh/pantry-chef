@@ -43,31 +43,31 @@ public class IngredientService {
     private final AppUtil appUtil;
 
     @Transactional(readOnly = true)
-    public CursorResponse<IngredientResponse> search(String keyword, UUID categoryId, UUID cursor, int size) {
+    public CursorResponse<IngredientResponse> searchIngredient(String keyword, UUID categoryId, UUID cursor, int size) {
         int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
 
         List<Ingredient> items = ingredientRepository
                 .findAll(buildSearchSpec(keyword, categoryId, cursor), PageRequest.of(0, pageSize + 1, Sort.by("id")))
                 .getContent();
 
-        return appUtil.buildCursorResponse(items, pageSize, Ingredient::getId, ingredientMapper::toResponse);
+        return appUtil.buildCursorResponse(items, pageSize, Ingredient::getId, ingredientMapper::toIngredientResponse);
     }
 
     @Transactional(readOnly = true)
-    public IngredientResponse getById(UUID id) {
-        return ingredientMapper.toResponse(findIngredient(id));
+    public IngredientResponse getIngredientById(UUID id) {
+        return ingredientMapper.toIngredientResponse(findIngredient(id));
     }
 
     @Transactional(readOnly = true)
-    public IngredientResponse getByBarcode(String barcode) {
+    public IngredientResponse getIngredientByBarcode(String barcode) {
         return ingredientRepository.findByBarcode(barcode.trim())
-                .map(ingredientMapper::toResponse)
+                .map(ingredientMapper::toIngredientResponse)
                 .orElseThrow(IngredientBarcodeNotFoundException::new);
     }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public IngredientResponse create(IngredientCreateRequest request) {
+    public IngredientResponse createIngredient(IngredientCreateRequest request) {
         IngredientCategory category = findCategory(request.getCategoryId());
 
         String barcode = request.getBarcode();
@@ -83,12 +83,12 @@ public class IngredientService {
                 .category(category)
                 .build();
 
-        return ingredientMapper.toResponse(ingredientRepository.save(ingredient));
+        return ingredientMapper.toIngredientResponse(ingredientRepository.save(ingredient));
     }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public IngredientResponse update(UUID id, IngredientUpdateRequest request) {
+    public IngredientResponse updateIngredient(UUID id, IngredientUpdateRequest request) {
         Ingredient ingredient = findIngredient(id);
         IngredientCategory category = findCategory(request.getCategoryId());
 
@@ -102,11 +102,11 @@ public class IngredientService {
         ingredient.setBarcode(barcode);
         ingredient.setCategory(category);
 
-        return ingredientMapper.toResponse(ingredientRepository.save(ingredient));
+        return ingredientMapper.toIngredientResponse(ingredientRepository.save(ingredient));
     }
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public void delete(UUID id) {
+    public void deleteIngredient(UUID id) {
         ingredientRepository.delete(findIngredient(id));
     }
 

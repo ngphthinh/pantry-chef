@@ -18,7 +18,7 @@ public class SyncStatusService {
     private final SyncStatusMapper syncStatusMapper;
 
     @Transactional(readOnly = true)
-    public List<SyncStatusResponse> getAll() {
-        return syncStatusMapper.toResponses(syncStatusRepository.findAll(Sort.by("id")));
+    public List<SyncStatusResponse> getStatuses() {
+        return syncStatusMapper.toSyncStatusResponses(syncStatusRepository.findAll(Sort.by("id")));
     }
 }

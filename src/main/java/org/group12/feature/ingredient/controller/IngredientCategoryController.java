@@ -19,46 +19,44 @@ import java.util.UUID;
 public class IngredientCategoryController {
 
     private final IngredientCategoryService categoryService;
-
-    // GET /v1/ingredient-categories  (công khai, khai báo trong SecurityConfig)
     @GetMapping
-    public ApiResponse<List<IngredientCategoryResponse>> getAll() {
+    public ApiResponse<List<IngredientCategoryResponse>> getIngredientCategories() {
         return ApiResponse.<List<IngredientCategoryResponse>>builder()
                 .code(IngredientResponseCode.CATEGORY_LIST_SUCCESS.getCode())
                 .message(IngredientResponseCode.CATEGORY_LIST_SUCCESS.getMessage())
-                .data(categoryService.getAll())
+                .data(categoryService.getIngredientCategories())
                 .build();
     }
 
     // POST /v1/ingredient-categories
 
     @PostMapping
-    public ApiResponse<IngredientCategoryResponse> create(@Valid @RequestBody IngredientCategoryRequest request) {
+    public ApiResponse<IngredientCategoryResponse> createIngredientCategory(@Valid @RequestBody IngredientCategoryRequest request) {
         return ApiResponse.<IngredientCategoryResponse>builder()
                 .code(IngredientResponseCode.CATEGORY_CREATE_SUCCESS.getCode())
                 .message(IngredientResponseCode.CATEGORY_CREATE_SUCCESS.getMessage())
-                .data(categoryService.create(request))
+                .data(categoryService.createIngredientCategory(request))
                 .build();
     }
 
     // PUT /v1/ingredient-categories/{id}
 
     @PutMapping("/{id}")
-    public ApiResponse<IngredientCategoryResponse> update(
+    public ApiResponse<IngredientCategoryResponse> updateIngredientCategory(
             @PathVariable("id") UUID id,
             @Valid @RequestBody IngredientCategoryRequest request) {
         return ApiResponse.<IngredientCategoryResponse>builder()
                 .code(IngredientResponseCode.CATEGORY_UPDATE_SUCCESS.getCode())
                 .message(IngredientResponseCode.CATEGORY_UPDATE_SUCCESS.getMessage())
-                .data(categoryService.update(id, request))
+                .data(categoryService.updateIngredientCategory(id, request))
                 .build();
     }
 
     // DELETE /v1/ingredient-categories/{id}
 
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable("id") UUID id) {
-        categoryService.delete(id);
+    public ApiResponse<Void> deleteIngredientCategory(@PathVariable("id") UUID id) {
+        categoryService.deleteIngredientCategory(id);
         return ApiResponse.<Void>builder()
                 .code(IngredientResponseCode.CATEGORY_DELETE_SUCCESS.getCode())
                 .message(IngredientResponseCode.CATEGORY_DELETE_SUCCESS.getMessage())

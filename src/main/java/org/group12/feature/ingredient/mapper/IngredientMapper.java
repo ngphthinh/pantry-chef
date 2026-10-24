@@ -6,5 +6,5 @@ import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring", uses = IngredientCategoryMapper.class)
 public interface IngredientMapper {
-    IngredientResponse toResponse(Ingredient ingredient);
+    IngredientResponse toIngredientResponse(Ingredient ingredient);
 }
