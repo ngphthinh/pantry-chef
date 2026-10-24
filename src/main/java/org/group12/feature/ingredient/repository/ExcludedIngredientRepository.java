@@ -14,4 +14,6 @@ public interface ExcludedIngredientRepository extends JpaRepository<ExcludedIngr
     Optional<ExcludedIngredient> findByIdAndUserId(UUID id, UUID userId);
 
     boolean existsByUserIdAndNameIgnoreCase(UUID userId, String name);
+
+    List<ExcludedIngredient> findByUserId(UUID userId);
 }

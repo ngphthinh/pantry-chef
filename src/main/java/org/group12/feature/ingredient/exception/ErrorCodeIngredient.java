@@ -15,8 +15,9 @@ public enum ErrorCodeIngredient implements BaseErrorCode {
     CATEGORY_IN_USE("INGREDIENT_CATEGORY_410", "Ingredient category is still used by ingredients", HttpStatus.CONFLICT),
 
     EXCLUDED_INGREDIENT_NOT_FOUND("EXCLUDED_INGREDIENT_404", "Excluded ingredient not found", HttpStatus.NOT_FOUND),
-    EXCLUDED_INGREDIENT_DUPLICATE("EXCLUDED_INGREDIENT_409", "Ingredient is already in your excluded list", HttpStatus.CONFLICT);
+    EXCLUDED_INGREDIENT_DUPLICATE("EXCLUDED_INGREDIENT_409", "Ingredient is already in your excluded list", HttpStatus.CONFLICT),
 
+    ;
     private final String code;
     private final String message;
     private final HttpStatus httpStatus;

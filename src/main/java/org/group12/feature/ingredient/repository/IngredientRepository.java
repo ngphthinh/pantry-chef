@@ -19,19 +19,28 @@ public interface IngredientRepository extends JpaRepository<Ingredient, UUID>, J
 
     boolean existsByBarcodeAndIdNot(String barcode, UUID id);
 
-    @Query(value = "SELECT EXISTS (SELECT 1 FROM ingredients WHERE category_id = :categoryId)", nativeQuery = true)
+    @Query("""
+            SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END
+            FROM Ingredient i
+            WHERE i.category.id = :categoryId
+            """)
     boolean existsAnyByCategoryId(@Param("categoryId") UUID categoryId);
     @Query("""
         SELECT i FROM Ingredient i
         LEFT JOIN FETCH i.category c
         WHERE i.id > :cursor
           AND (:allCategories = true OR c.id = :categoryId)
-          AND function('unaccent', lower(i.name)) LIKE :pattern ESCAPE '!'
+          AND lower(cast(function('translate', i.name,
+                  :#{T(org.group12.common.utils.TextUtil).ACCENT_FROM},
+                  :#{T(org.group12.common.utils.TextUtil).ACCENT_TO}) as String))
+              LIKE :pattern ESCAPE '!'
         ORDER BY i.id ASC
-        """)
-    List<Ingredient> searchIngredients(@Param("pattern") String pattern,
-                            @Param("allCategories") boolean allCategories,
-                            @Param("categoryId") UUID categoryId,
-                            @Param("cursor") UUID cursor,
-                            Pageable pageable);
+    """)
+    List<Ingredient> searchIngredients(
+            @Param("cursor") UUID cursor,
+            @Param("allCategories") boolean allCategories,
+            @Param("categoryId") UUID categoryId,
+            @Param("pattern") String pattern,
+            Pageable pageable
+    );
 }

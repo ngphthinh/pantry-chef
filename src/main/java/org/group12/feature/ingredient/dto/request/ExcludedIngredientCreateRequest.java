@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Request DTO for creating a new ingredient")
 public class ExcludedIngredientCreateRequest {
     @NotBlank(message = "Name is required")
+    @Schema(description = "Name of the excluded ingredient", example = "Peanuts")
     @Size(max = 255, message = "Name must be at most 255 characters")
     private String name;
 }

@@ -63,7 +63,7 @@ class CuisineControllerTest {
         mockMvc.perform(post("/v1/cuisines")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"code\":\"JAPANESE\",\"name\":\"Japanese\"}"))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value("CUISINE_201"))
                 .andExpect(jsonPath("$.data.code").value("JAPANESE"));
     }
@@ -105,9 +105,8 @@ class CuisineControllerTest {
     }
 
     @Test
-    void delete_unusedCuisine_returnsDeletedCode() throws Exception {
+    void delete_unusedCuisine_returnsNoContent() throws Exception {
         mockMvc.perform(delete("/v1/cuisines/" + ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("CUISINE_200"));
+                .andExpect(status().isNoContent());
     }
 }

@@ -12,8 +12,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @Builder
-@Schema
+@Schema(description = "Request body for creating a shopping list")
 public class ShoppingListCreateRequest {
+
+    @Schema(description = "Name of the shopping list", example = "Weekend groceries")
     @NotBlank(message = "Name is required")
     @Size(max = 255, message = "Name must not exceed 255 characters")
     private String name;

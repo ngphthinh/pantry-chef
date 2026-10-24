@@ -51,10 +51,10 @@ public class IngredientService {
         String pattern = "%" + escapeLike(normalized) + "%";
 
         List<Ingredient> items = ingredientRepository.searchIngredients(
-                pattern,
+                cursor == null ? NIL_UUID : cursor,
                 categoryId == null,
                 categoryId == null ? NIL_UUID : categoryId,
-                cursor == null ? NIL_UUID : cursor,
+                pattern,
                 PageRequest.of(0, pageSize + 1));
 
         return appUtil.buildCursorResponse(items, pageSize, Ingredient::getId, ingredientMapper::toIngredientResponse);

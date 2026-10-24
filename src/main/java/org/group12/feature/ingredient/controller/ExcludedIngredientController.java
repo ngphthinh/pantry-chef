@@ -41,11 +41,8 @@ public class ExcludedIngredientController {
 
     // DELETE /v1/users/me/excluded-ingredients/{id}
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> removeExcludedIngredient(@PathVariable("id") UUID id) {
+    @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+    public void removeExcludedIngredient(@PathVariable("id") UUID id) {
         excludedIngredientService.removeExcludedIngredient(id);
-        return ApiResponse.<Void>builder()
-                .code(IngredientResponseCode.EXCLUDED_DELETE_SUCCESS.getCode())
-                .message(IngredientResponseCode.EXCLUDED_DELETE_SUCCESS.getMessage())
-                .build();
     }
 }

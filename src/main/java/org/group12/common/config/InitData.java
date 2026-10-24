@@ -13,13 +13,29 @@ import org.group12.feature.auth.enums.ThemeMode;
 import org.group12.feature.auth.repository.RoleRepository;
 import org.group12.feature.auth.repository.UserRepository;
 import org.group12.feature.auth.service.AuthenticationService;
+import org.group12.feature.cookbook.entity.SavedRecipe;
+import org.group12.feature.cookbook.repository.CollectionRepository;
+import org.group12.feature.cookbook.repository.SavedRecipeRepository;
+import org.group12.feature.mealplan.entity.MealPlan;
+import org.group12.feature.mealplan.entity.MealPlanEntry;
+import org.group12.feature.mealplan.enums.MealType;
+import org.group12.feature.mealplan.repository.MealPlanRepository;
+import org.group12.feature.pantry.entity.PantryItem;
+import org.group12.feature.pantry.enums.StorageLocation;
+import org.group12.feature.pantry.repository.PantryItemRepository;
 import org.group12.feature.recipe.entity.Cuisine;
+import org.group12.feature.recipe.entity.Recipe;
+import org.group12.feature.recipe.entity.RecipeIngredient;
+import org.group12.feature.recipe.entity.RecipeStep;
+import org.group12.feature.recipe.enums.Difficulty;
 import org.group12.feature.recipe.repository.CuisineRepository;
+import org.group12.feature.recipe.repository.RecipeRepository;
 import org.group12.feature.sysc.entity.SyncStatus;
 import org.group12.feature.sysc.repository.SyncStatusRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +47,8 @@ import org.group12.feature.ingredient.repository.ExcludedIngredientRepository;
 import org.group12.feature.ingredient.repository.IngredientCategoryRepository;
 import org.group12.feature.ingredient.repository.IngredientRepository;
 
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -47,28 +65,50 @@ public class InitData implements CommandLineRunner {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PantryItemRepository pantryItemRepository;
+    private final SavedRecipeRepository savedRecipeRepository;
+    private final CollectionRepository collectionRepository;
+
     private final AppUtil appUtil;
-    private final AuthenticationService authenticationService;
+    private final RecipeRepository recipeRepository;
     private final CuisineRepository cuisineRepository;
     private final IngredientCategoryRepository ingredientCategoryRepository;
     private final IngredientRepository ingredientRepository;
     private final ExcludedIngredientRepository excludedIngredientRepository;
     private final SyncStatusRepository syncStatusRepository;
+    private final MealPlanRepository mealPlanRepository;
+
 
     @Value("${app.password-default}")
     private String PASSWORD;
+    @Value("${spring.jpa.hibernate.ddl-auto}")
+    private String initData;
 
     @Override
 
     public void run(String... args) throws Exception {
-        initRoles();
-        initUsers();
-        initCuisines();
-        initIngredientCategories();
-        initSyncStatuses();
-        initIngredients();
-        initExcludedIngredients();
+        if (!"create".equals(initData) && !"create-drop".equals(initData)) {
+            log.info("Skipping data initialization because spring.jpa.hibernate.ddl-auto is not 'create' or 'create-drop'");
+
+
+        } else {
+            initRoles();
+            initUsers();
+            initCuisines();
+            initIngredientCategories();
+            initSyncStatuses();
+            initIngredients();
+            initExcludedIngredients();
+            initRecipes();
+            initPantryItems();
+            initMealPlans();
+            initSavedRecipes();
+            initCollections();
+            log.info("Data initialization completed successfully.");
+        }
+
     }
+
     private void initSyncStatuses() {
         Map<String, String> statuses = new LinkedHashMap<>();
         statuses.put("PENDING", "Chờ đồng bộ");
@@ -95,6 +135,7 @@ public class InitData implements CommandLineRunner {
             log.info("Seeded {} sync statuses", missing.size());
         }
     }
+
     private void initIngredientCategories() {
         if (ingredientCategoryRepository.count() == 0) {
             List<String> rows = new ArrayList<>(List.of(
@@ -116,6 +157,7 @@ public class InitData implements CommandLineRunner {
             ingredientCategoryRepository.saveAll(categories);
         }
     }
+
     private void initIngredients() {
         if (ingredientRepository.count() > 0) {
             return;
@@ -164,6 +206,9 @@ public class InitData implements CommandLineRunner {
         ingredientRepository.saveAll(ingredients);
     }
 
+    /**
+     * Vài nguyên liệu loại trừ cho tài khoản admin để test API.
+     */
     private void initExcludedIngredients() {
         if (excludedIngredientRepository.count() > 0) {
             return;
@@ -178,6 +223,7 @@ public class InitData implements CommandLineRunner {
                                         .build())
                                 .toList()));
     }
+
     private void initUsers() {
         Faker fakeData = new Faker();
         int numberOfUsers = 100;
@@ -234,4 +280,277 @@ public class InitData implements CommandLineRunner {
         }
     }
 
+
+    private static final List<String> DISHES = List.of(
+            "Phở bò", "Bún chả", "Cơm tấm sườn", "Bánh xèo", "Gỏi cuốn", "Canh chua cá lóc",
+            "Thịt kho tàu", "Bún bò Huế", "Mì Quảng", "Cá kho tộ", "Rau muống xào tỏi",
+            "Gà nướng sả", "Bò lúc lắc", "Canh bí đao tôm", "Đậu hũ sốt cà chua",
+            "Trứng chiên hành", "Chả giò", "Bún riêu cua", "Hủ tiếu Nam Vang", "Cháo gà");
+
+    private static final List<String> STEPS = List.of(
+            "Sơ chế và rửa sạch nguyên liệu.",
+            "Ướp nguyên liệu với gia vị trong 15 phút.",
+            "Phi thơm hành tỏi với dầu ăn.",
+            "Cho nguyên liệu chính vào xào hoặc nướng đến khi săn lại.",
+            "Thêm nước và nấu liu riu đến khi mềm.",
+            "Nêm nếm lại cho vừa ăn.",
+            "Bày ra đĩa và thưởng thức khi còn nóng.");
+
+    private void initRecipes() {
+        if (recipeRepository.count() > 0) {
+            return;
+        }
+
+        List<Cuisine> cuisines = cuisineRepository.findAll();
+        List<Ingredient> pool = ingredientRepository.findAll();
+        List<User> owners = userRepository.findAll(PageRequest.of(0, 5)).getContent();
+        if (cuisines.isEmpty() || pool.isEmpty()) {
+            log.warn("Skip seeding recipes: cuisines or ingredients missing");
+            return;
+        }
+
+        Faker faker = new Faker(new Random(42)); // seed cố định → dữ liệu lặp lại được
+        Difficulty[] difficulties = Difficulty.values();
+        int total = 60;
+        int customCount = owners.isEmpty() ? 0 : 10;
+
+        List<Recipe> recipes = new ArrayList<>();
+        for (int i = 0; i < total; i++) {
+            boolean custom = i < customCount;
+            String title = DISHES.get(i % DISHES.size())
+                    + (i >= DISHES.size() ? " #" + (i / DISHES.size() + 1) : "");
+
+            Recipe recipe = Recipe.builder()
+                    .id(appUtil.generateUUID())
+                    .title(title)
+                    .imageUrl("https://picsum.photos/seed/recipe" + i + "/600/400")
+                    .servings(faker.number().numberBetween(1, 8))
+                    .readyInMinutes(faker.number().numberBetween(10, 120))
+                    .difficulty(difficulties[faker.number().numberBetween(0, difficulties.length)])
+                    .custom(custom)
+                    .cuisine(cuisines.get(faker.number().numberBetween(0, cuisines.size())))
+                    .build();
+
+            if (custom) {
+                recipe.setOwner(owners.get(i % owners.size()));
+            } else {
+                recipe.setExternalId("seed-" + (100000 + i));
+                recipe.setSourceUrl("https://example.com/recipes/seed-" + (100000 + i));
+            }
+
+            List<Ingredient> shuffled = new ArrayList<>(pool);
+            Collections.shuffle(shuffled, new Random(i));
+            int ingredientCount = faker.number().numberBetween(4, 9);
+            for (Ingredient ing : shuffled.subList(0, Math.min(ingredientCount, shuffled.size()))) {
+                recipe.getIngredients().add(RecipeIngredient.builder()
+                        .id(appUtil.generateUUID())
+                        .recipe(recipe)
+                        .name(ing.getName())
+                        .amount((double) faker.number().numberBetween(1, 500))
+                        .unit(ing.getDefaultUnit())
+                        .build());
+            }
+
+            int stepCount = faker.number().numberBetween(3, STEPS.size() + 1);
+            for (int s = 0; s < stepCount; s++) {
+                recipe.getSteps().add(RecipeStep.builder()
+                        .id(appUtil.generateUUID())
+                        .recipe(recipe)
+                        .stepOrder(s + 1)
+                        .text(STEPS.get(s))
+                        .timerSeconds(STEP_TIMERS.get(s))   // null nếu bước không cần hẹn giờ
+                        .build());
+            }
+
+            recipes.add(recipe);
+        }
+
+        recipeRepository.saveAll(recipes);
+        log.info("Seeded {} recipes ({} custom)", recipes.size(), customCount);
+    }
+
+    // cùng thứ tự với STEPS: bước 2 ướp 15 phút, bước 5 hầm 20 phút
+    private static final List<Integer> STEP_TIMERS = Arrays.asList(
+            null, 900, null, null, 1200, null, null);
+
+    private void initPantryItems() {
+        if (pantryItemRepository.count() > 0) {
+            return;
+        }
+        User admin = userRepository.findByEmail("admin@gmail.com").orElse(null);
+        List<Ingredient> ingredients = ingredientRepository.findAll();
+        if (admin == null || ingredients.isEmpty()) {
+            log.warn("Skip seeding pantry items: admin or ingredients missing");
+            return;
+        }
+
+        SyncStatus synced = syncStatusRepository.findAllByCodeIn(Set.of("SYNCED")).stream()
+                .findFirst().orElse(null);
+
+        // bỏ các nguyên liệu admin đã loại trừ để dữ liệu test không mâu thuẫn
+        Set<String> excluded = Set.of("Tôm", "Đậu phộng", "Sữa tươi");
+        List<Ingredient> candidates = ingredients.stream()
+                .filter(i -> !excluded.contains(i.getName()))
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        Collections.shuffle(candidates, new Random(42));   // seed cố định → lặp lại được
+        Random random = new Random(42);
+        StorageLocation[] locations = StorageLocation.values();
+        LocalDate today = LocalDate.now();
+
+        List<PantryItem> items = candidates.stream()
+                .limit(15)
+                .map(ing -> PantryItem.builder()
+                        .id(appUtil.generateUUID())
+                        .user(admin)
+                        .ingredient(ing)
+                        .quantity((random.nextDouble(500) + 1))
+                        .unit(ing.getDefaultUnit())
+                        .location(locations[random.nextInt(locations.length)])
+                        .expiryDate(today.plusDays(random.nextInt(30) + 1))
+                        .syncStatus(synced)
+                        .build())
+                .toList();
+
+        pantryItemRepository.saveAll(items);
+        log.info("Seeded {} pantry items for admin", items.size());
+    }
+
+    private void initMealPlans() {
+        if (mealPlanRepository.count() > 0) {
+            return;
+        }
+        User admin = userRepository.findByEmail("admin@gmail.com").orElse(null);
+        List<Recipe> recipes = new ArrayList<>(recipeRepository.findAll());
+        if (admin == null || recipes.isEmpty()) {
+            log.warn("Skip seeding meal plans: admin or recipes missing");
+            return;
+        }
+
+        // công thức custom của người khác không được dùng cho admin
+        recipes.removeIf(r -> r.isCustom()
+                && (r.getOwner() == null || !r.getOwner().getId().equals(admin.getId())));
+        if (recipes.isEmpty()) {
+            log.warn("Skip seeding meal plans: no usable recipes");
+            return;
+        }
+
+        Collections.shuffle(recipes, new Random(42));   // seed cố định → lặp lại được
+        Random random = new Random(42);
+        LocalDate today = LocalDate.now();
+        LocalDate thisMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        MealType[] meals = MealType.values();
+        int cursor = 0;
+
+        List<MealPlan> plans = new ArrayList<>();
+        for (int week = 0; week < 2; week++) {               // tuần này + tuần sau
+            MealPlan plan = MealPlan.builder()
+                    .id(appUtil.generateUUID())
+                    .weekStart(thisMonday.plusWeeks(week))
+                    .user(admin)
+                    .build();
+
+            for (int day = 0; day < 7; day++) {
+                LocalDate date = plan.getWeekStart().plusDays(day);
+                for (MealType meal : meals) {
+                    Recipe recipe = recipes.get(cursor++ % recipes.size());   // xoay vòng, ít trùng món
+                    plan.getEntries().add(MealPlanEntry.builder()
+                            .id(appUtil.generateUUID())
+                            .mealPlan(plan)
+                            .recipe(recipe)
+                            .date(date)
+                            .mealType(meal)
+                            .servings(random.nextInt(4) + 1)
+                            .cooked(date.isBefore(today))      // ngày đã qua = đã nấu
+                            .build());
+                }
+            }
+            plans.add(plan);
+        }
+
+        mealPlanRepository.saveAll(plans);
+        log.info("Seeded {} meal plans ({} entries) for admin", plans.size(),
+                plans.stream().mapToInt(p -> p.getEntries().size()).sum());
+    }
+
+    private static final List<String> NOTES = Arrays.asList(
+            "Nêm ít muối hơn lần sau.", "Cả nhà đều thích.", "Nên ướp lâu hơn.",
+            "Hợp để nấu cuối tuần.", "Giảm đường một chút.", null, null);
+
+    private void initSavedRecipes() {
+        if (savedRecipeRepository.count() > 0) {
+            return;
+        }
+        User admin = userRepository.findByEmail("admin@gmail.com").orElse(null);
+        List<Recipe> recipes = new ArrayList<>(recipeRepository.findAll());
+        if (admin == null || recipes.isEmpty()) {
+            log.warn("Skip seeding saved recipes: admin or recipes missing");
+            return;
+        }
+
+        // công thức custom của người khác không được lưu vào sách của admin
+        recipes.removeIf(r -> r.isCustom()
+                && (r.getOwner() == null || !r.getOwner().getId().equals(admin.getId())));
+
+        SyncStatus synced = syncStatusRepository.findAllByCodeIn(Set.of("SYNCED")).stream()
+                .findFirst().orElse(null);
+
+        Collections.shuffle(recipes, new Random(42));   // seed cố định → lặp lại được
+        Random random = new Random(42);
+
+        List<SavedRecipe> saved = recipes.stream()
+                .limit(15)
+                .map(recipe -> SavedRecipe.builder()
+                        .id(appUtil.generateUUID())
+                        .user(admin)
+                        .recipe(recipe)
+                        .rating(random.nextInt(5) + 1)                       // 1..5
+                        .note(NOTES.get(random.nextInt(NOTES.size())))       // có thể null
+                        .favorite(random.nextInt(100) < 30)                  // ~30% yêu thích
+                        .syncStatus(synced)
+                        .build())
+                .toList();
+
+        savedRecipeRepository.saveAll(saved);
+        log.info("Seeded {} saved recipes for admin", saved.size());
+    }
+    private static final List<String> COLLECTION_NAMES = List.of(
+            "Món yêu thích", "Nấu nhanh ngày thường", "Cuối tuần", "Món chay", "Tiệc gia đình");
+
+    private void initCollections() {
+        if (collectionRepository.count() > 0) {
+            return;
+        }
+        User admin = userRepository.findByEmail("admin@gmail.com").orElse(null);
+        if (admin == null) {
+            log.warn("Skip seeding collections: admin missing");
+            return;
+        }
+        List<SavedRecipe> savedRecipes = savedRecipeRepository.findAll().stream()
+                .filter(s -> s.getUser().getId().equals(admin.getId()))
+                .collect(Collectors.toCollection(ArrayList::new));
+        if (savedRecipes.isEmpty()) {
+            log.warn("Skip seeding collections: no saved recipes");
+            return;
+        }
+
+        Collections.shuffle(savedRecipes, new Random(42));   // seed cố định → lặp lại được
+        Random random = new Random(42);
+
+        List<org.group12.feature.cookbook.entity.Collection> collections = new ArrayList<>();
+        for (String name : COLLECTION_NAMES) {
+            int size = Math.min(savedRecipes.size(), random.nextInt(4) + 2);   // 2..5 món
+            Collections.shuffle(savedRecipes, new Random(random.nextLong()));
+
+            collections.add(org.group12.feature.cookbook.entity.Collection.builder()
+                    .id(appUtil.generateUUID())
+                    .name(name)
+                    .user(admin)
+                    .savedRecipes(new HashSet<>(savedRecipes.subList(0, size)))
+                    .build());
+        }
+
+        collectionRepository.saveAll(collections);
+        log.info("Seeded {} collections for admin", collections.size());
+    }
 }

@@ -15,10 +15,12 @@ import lombok.NoArgsConstructor;
 @Data
 @Schema(description = "Request DTO for creating a new ingredient")
 public class IngredientCategoryRequest {
+    @Schema(description = "Code of the ingredient category", example = "SPICE_HERB")
     @NotBlank(message = "Code is required")
     @Pattern(regexp = "^[A-Z][A-Z0-9_]{1,49}$", message = "Code must be upper snake case, e.g. SPICE_HERB")
     private String code;
 
+    @Schema(description = "Name of the ingredient category", example = "Spices and Herbs")
     @NotBlank(message = "Name is required")
     @Size(max = 255, message = "Name must be at most 255 characters")
     private String name;

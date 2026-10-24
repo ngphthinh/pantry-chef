@@ -29,7 +29,7 @@ public class IngredientCategoryController {
     }
 
     // POST /v1/ingredient-categories
-
+    @ResponseStatus(org.springframework.http.HttpStatus.CREATED)
     @PostMapping
     public ApiResponse<IngredientCategoryResponse> createIngredientCategory(@Valid @RequestBody IngredientCategoryRequest request) {
         return ApiResponse.<IngredientCategoryResponse>builder()
@@ -54,12 +54,9 @@ public class IngredientCategoryController {
 
     // DELETE /v1/ingredient-categories/{id}
 
+    @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> deleteIngredientCategory(@PathVariable("id") UUID id) {
+    public void deleteIngredientCategory(@PathVariable("id") UUID id) {
         categoryService.deleteIngredientCategory(id);
-        return ApiResponse.<Void>builder()
-                .code(IngredientResponseCode.CATEGORY_DELETE_SUCCESS.getCode())
-                .message(IngredientResponseCode.CATEGORY_DELETE_SUCCESS.getMessage())
-                .build();
     }
 }

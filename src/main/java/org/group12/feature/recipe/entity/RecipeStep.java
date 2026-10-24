@@ -25,4 +25,5 @@ public class RecipeStep extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "recipe_id")
     private Recipe recipe;
+
 }

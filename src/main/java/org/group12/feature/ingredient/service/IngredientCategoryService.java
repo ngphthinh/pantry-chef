@@ -56,7 +56,7 @@ public class IngredientCategoryService {
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public IngredientCategoryResponse updateIngredientCategory(UUID id, IngredientCategoryRequest request) {
-        IngredientCategory category = findCategory(id);
+        IngredientCategory category = findCategoryOrThrow(id);
 
         if (!category.getCode().equals(request.getCode()) && categoryRepository.existsByCode(request.getCode())) {
             throw new IngredientCategoryCodeDuplicateException();
@@ -70,7 +70,7 @@ public class IngredientCategoryService {
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteIngredientCategory(UUID id) {
-        IngredientCategory category = findCategory(id);
+        IngredientCategory category = findCategoryOrThrow(id);
 
         if (ingredientRepository.existsAnyByCategoryId(id)) {
             throw new IngredientCategoryInUseException();
@@ -79,7 +79,7 @@ public class IngredientCategoryService {
         categoryRepository.delete(category);
     }
 
-    private IngredientCategory findCategory(UUID id) {
+    private IngredientCategory findCategoryOrThrow(UUID id) {
         return categoryRepository.findById(id).orElseThrow(IngredientCategoryNotFoundException::new);
     }
 }

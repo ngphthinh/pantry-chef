@@ -34,7 +34,7 @@ public class MealPlanEntry extends SoftDeletableEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "meal_plan_id")
     private MealPlan mealPlan;
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "recipe_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "recipe_id", nullable = true)
     private Recipe recipe;
 }

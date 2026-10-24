@@ -8,18 +8,16 @@ import lombok.NoArgsConstructor;
 import org.group12.common.enums.Unit;
 import org.group12.feature.shopping.enums.ShoppingItemStatus;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Builder
-@Schema
 public class ShoppingItemResponse {
     private UUID id;
     private String name;
-    private int quantity;
+    private Double quantity;
     private Unit unit;
     private ShoppingItemStatus status;
 }
