@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -24,13 +25,15 @@ public class AiMealPlanRequest {
     private Instant weekStart;
 
     @Schema(description = "Number of days for the meal plan. Must be between 1 and 7.", example = "7")
-    @Min(1) @Max(7)
+    @Min(1)
+    @Max(7)
     private int days;
 
     @Schema(description = "UUID of the cuisine. Optional. If not provided, the system will choose a cuisine for you.")
     private UUID cuisineId;          // optional
 
     @Schema(description = "Maximum number of minutes for cooking. Optional. If not provided, the system will choose a suitable time for you.")
-    @Min(5) @Max(480)
+    @Min(5)
+    @Max(480)
     private Integer maxMinutes;      // optional
 }

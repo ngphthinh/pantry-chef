@@ -4,19 +4,17 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.group12.common.config.ContentGuard;
 import org.group12.common.config.PromptLoader;
-import org.group12.common.exception.AppException;
-import org.group12.common.exception.ErrorCode;
 import org.group12.common.utils.AppUtil;
 import org.group12.feature.ai.dto.request.SubstitutionRequest;
 import org.group12.feature.ai.dto.response.SubstitutionResponse;
 import org.group12.feature.ai.exception.AiProviderException;
 import org.group12.feature.recipe.entity.Recipe;
+import org.group12.feature.recipe.exception.RecipeNotFoundException;
 import org.group12.feature.recipe.repository.RecipeRepository;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
@@ -108,7 +106,7 @@ public class SubstitutionService {
         // công thức custom chỉ chủ sở hữu được dùng
         if (recipe.isCustom()
                 && (recipe.getOwner() == null || !recipe.getOwner().getId().equals(currentUserId))) {
-            throw new EntityNotFoundException("Recipe not found: " + request.getRecipeId());
+            throw new RecipeNotFoundException();
         }
         return recipe.getTitle();
     }

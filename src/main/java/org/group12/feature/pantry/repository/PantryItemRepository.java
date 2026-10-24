@@ -86,4 +86,11 @@ public interface PantryItemRepository extends JpaRepository<PantryItem, UUID> {
               AND p.expiryDate < CURRENT_DATE
             """)
     long countExpiredItemsByUserId(@Param("userId") UUID userId);
+
+    @Query("""
+        select distinct i.ingredient.name
+        from PantryItem i
+        where i.user.id = :userId
+        """)
+    List<String> findDistinctIngredientNames(@Param("userId") UUID userId, Pageable pageable);
 }

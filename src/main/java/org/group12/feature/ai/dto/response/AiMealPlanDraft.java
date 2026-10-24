@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.group12.feature.mealplan.enums.MealType;
 
 import java.util.List;
+import java.util.UUID;
 
 @Builder
 @Data
@@ -15,16 +16,13 @@ import java.util.List;
 public class AiMealPlanDraft {
     private List<Item> items;
 
-
     @Builder
+    @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    @Data
     public static class Item {
-        private Integer dayIndex;            // 0..days-1
-        private MealType mealType;             // BREAKFAST | LUNCH | DINNER
-        private String recipeTitle;
-        private Integer readyInMinutes;
-        private List<String> usedIngredients;
+        private Integer dayIndex;
+        private MealType mealType;
+        private String recipeId;      // String để id sai không làm Jackson ném lỗi
     }
 }

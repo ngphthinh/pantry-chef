@@ -4,17 +4,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.group12.feature.mealplan.enums.MealType;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+// MealPlanResponse
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class MealPlanResponse {
-
     private Instant weekStart;
     private List<Entry> entries;
 
@@ -27,10 +28,10 @@ public class MealPlanResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Entry {
-        private Instant date;          // weekStart + dayIndex
-        private String mealType;         // BREAKFAST | LUNCH | DINNER
-        private String recipeTitle;
-        private UUID recipeId;           // null nếu không trùng tên recipe nào trong DB
-        private Integer readyInMinutes;
+        private Instant date;
+        private MealType mealType;
+        private UUID recipeId;        // luôn có giá trị
+        private Integer servings;
+        private String recipeTitle;   // chỉ để hiển thị, request lưu bỏ qua field này
     }
 }
