@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface CuisineRepository extends JpaRepository<Cuisine, UUID> {
@@ -16,6 +17,8 @@ public interface CuisineRepository extends JpaRepository<Cuisine, UUID> {
 
     boolean existsByCodeAndIdNot(String code, UUID id);
 
-    @Query(value = "SELECT EXISTS (SELECT 1 FROM recipes WHERE cuisine_id = :cuisineId)", nativeQuery = true)
+    @Query(value = "SELECT EXISTS (SELECT 1 FROM Recipe r WHERE r.cuisine.id = :cuisineId)")
     boolean isUsedByRecipe(@Param("cuisineId") UUID cuisineId);
+
+    Optional<Cuisine> findByNameIgnoreCase(String name);
 }

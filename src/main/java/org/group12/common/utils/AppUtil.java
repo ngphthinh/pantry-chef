@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.NoArgsConstructor;
 import org.group12.common.dto.response.CursorResponse;
 import org.group12.common.dto.response.ErrorResponse;
+import org.group12.common.enums.Unit;
 import org.group12.common.exception.ErrorCode;
 import org.group12.common.exception.UnauthenticatedException;
 import org.springframework.http.HttpStatus;
@@ -13,10 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 
 @Component
@@ -79,13 +77,14 @@ public class AppUtil {
 
     /**
      * Build a cursor-based pagination response.
-     * @param items the list of items to include in the response
-     * @param size the maximum number of items to include in the response
+     *
+     * @param items           the list of items to include in the response
+     * @param size            the maximum number of items to include in the response
      * @param cursorExtractor a function to extract the cursor value from an item
-     * @param mapper a function to map an item to the desired response type
+     * @param mapper          a function to map an item to the desired response type
+     * @param <T>             the type of the items in the input list
+     * @param <R>             the type of the items in the response
      * @return a CursorResponse containing the mapped items, next cursor, and hasNext flag
-     * @param <T> the type of the items in the input list
-     * @param <R> the type of the items in the response
      */
     public <T, R> CursorResponse<R> buildCursorResponse(
             List<T> items,
@@ -120,4 +119,25 @@ public class AppUtil {
                 .build();
     }
 
+
+    /**
+     * Đơn vị không có trong {@link Unit} (clove, slice, large, ...) được xem là đếm theo cái (PCS).
+     */
+    public Unit toUnit(String unit) {
+        if (unit == null) {
+            return Unit.PCS;
+        }
+        return switch (unit.trim().toLowerCase(Locale.ROOT)) {
+            case "mg", "milligram", "milligrams" -> Unit.MG;
+            case "g", "gram", "grams" -> Unit.G;
+            case "kg", "kilogram", "kilograms" -> Unit.KG;
+            case "ml", "milliliter", "milliliters", "millilitre", "millilitres" -> Unit.ML;
+            case "l", "liter", "liters", "litre", "litres" -> Unit.L;
+            case "tbsp", "tbsps", "tablespoon", "tablespoons" -> Unit.TBSP;
+            case "tsp", "tsps", "teaspoon", "teaspoons" -> Unit.TSP;
+            case "cup", "cups" -> Unit.CUP;
+            case "pinch", "pinches" -> Unit.PINCH;
+            default -> Unit.PCS;
+        };
+    }
 }

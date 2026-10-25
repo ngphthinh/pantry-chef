@@ -337,8 +337,8 @@ public class InitData implements CommandLineRunner {
             if (custom) {
                 recipe.setOwner(owners.get(i % owners.size()));
             } else {
-                recipe.setExternalId("seed-" + (100000 + i));
-                recipe.setSourceUrl("https://example.com/recipes/seed-" + (100000 + i));
+//                recipe.setExternalId("seed-" + (100000 + i));
+//                recipe.setSourceUrl("https://example.com/recipes/seed-" + (100000 + i));
             }
 
             List<Ingredient> shuffled = new ArrayList<>(pool);

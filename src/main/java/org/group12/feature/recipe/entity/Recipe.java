@@ -28,11 +28,14 @@ public class Recipe extends SoftDeletableEntity {
     private String externalId;
     @Column(nullable = false)
     private String title;
+    @Column(length = 1000)
     private String imageUrl;
+    private String publicImgId; // public id trên Cloudinary, chỉ có với ảnh do người dùng upload
     private Integer servings;
     private Integer readyInMinutes;
     @Enumerated(EnumType.STRING)
     private Difficulty difficulty;
+    @Column(length = 1000)
     private String sourceUrl;
     private boolean custom;
 

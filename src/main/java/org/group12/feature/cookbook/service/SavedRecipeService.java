@@ -16,6 +16,7 @@ import org.group12.feature.cookbook.repository.SavedRecipeRepository;
 import org.group12.feature.recipe.entity.Recipe;
 import org.group12.feature.recipe.exception.RecipeNotFoundException;
 import org.group12.feature.recipe.repository.RecipeRepository;
+import org.group12.feature.recipe.service.RecipeService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import java.util.UUID;
 public class SavedRecipeService {
     private final SavedRecipeRepository savedRecipeRepository;
     private final RecipeRepository recipeRepository;
+    private final RecipeService recipeService;
     private final UserRepository userRepository;
     private final SavedRecipeMapper mapper;
     private final AppUtil appUtil;
@@ -99,8 +101,10 @@ public class SavedRecipeService {
         return mapper.toSavedRecipeResponse(savedRecipeRepository.save(saved));
     }
 
-    private Recipe importExternal(UUID externalId) {
-        throw new RecipeNotFoundException();
+    /** Lấy công thức từ API ngoài và lưu bản sao cục bộ (cùng transaction), rồi trả entity để gắn SavedRecipe. */
+    private Recipe importExternal(String externalId) {
+        UUID recipeId = recipeService.getByExternalId(externalId).getId();
+        return recipeRepository.findById(recipeId).orElseThrow(RecipeNotFoundException::new);
     }
 
 }
