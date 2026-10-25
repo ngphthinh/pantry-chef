@@ -88,16 +88,7 @@ public class MealPlanService {
 
         if (request.getEntries() != null && !request.getEntries().isEmpty()) {
             for (MealPlanEntryCreateRequest entryReq : request.getEntries()) {
-                validateEntryDateInWeek(entryReq.getDate(), request.getWeekStart());
-                Recipe recipe = null;
-                if (entryReq.getRecipeId() != null) {
-
-                    recipe = recipeRepository.findById(entryReq.getRecipeId())
-                            .orElseThrow(RecipeNotFoundException::new);
-                }
-
-                MealPlanEntry entry = mealPlanEntryMapper.toMealPlanEntry(entryReq, mealPlan, recipe);
-                entry.setId(appUtil.generateUUID());
+                MealPlanEntry entry = buildEntry(mealPlan, entryReq);
                 mealPlan.getEntries().add(entry);
             }
         }
@@ -117,16 +108,7 @@ public class MealPlanService {
     @Transactional
     public MealPlanEntryResponse addEntry(UUID mealPlanId, MealPlanEntryCreateRequest request) {
         MealPlan mealPlan = findOwnedMealPlan(mealPlanId);
-        validateEntryDateInWeek(request.getDate(), mealPlan.getWeekStart());
-
-        Recipe recipe = null;
-        if (request.getRecipeId() != null) {
-            recipe = recipeRepository.findById(request.getRecipeId())
-                    .orElseThrow(RecipeNotFoundException::new);
-        }
-        MealPlanEntry entry = mealPlanEntryMapper.toMealPlanEntry(request, mealPlan, recipe);
-        entry.setId(appUtil.generateUUID());
-
+        MealPlanEntry entry = buildEntry(mealPlan, request);
         entry = mealPlanEntryRepository.save(entry);
         log.info("Added entry {} to meal plan {}", entry.getId(), mealPlanId);
         return mealPlanEntryMapper.toMealPlanEntryResponse(entry);
@@ -281,5 +263,17 @@ public class MealPlanService {
         if (entryDate.isBefore(weekStart) || entryDate.isAfter(weekEnd)) {
             throw new MealPlanEntryDateInvalidException();
         }
+    }
+
+    private MealPlanEntry buildEntry(MealPlan mealPlan, MealPlanEntryCreateRequest req) {
+        validateEntryDateInWeek(req.getDate(), mealPlan.getWeekStart());
+
+        Recipe recipe = req.getRecipeId() == null ? null
+                : recipeRepository.findById(req.getRecipeId())
+                .orElseThrow(RecipeNotFoundException::new);
+
+        MealPlanEntry entry = mealPlanEntryMapper.toMealPlanEntry(req, mealPlan, recipe);
+        entry.setId(appUtil.generateUUID());
+        return entry;
     }
 }
