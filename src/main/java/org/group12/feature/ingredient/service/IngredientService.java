@@ -42,15 +42,26 @@ public class IngredientService {
     private final IngredientMapper ingredientMapper;
     private final AppUtil appUtil;
 
+    private static final UUID NIL_UUID = new UUID(0L, 0L);
+
     @Transactional(readOnly = true)
     public CursorResponse<IngredientResponse> searchIngredient(String keyword, UUID categoryId, UUID cursor, int size) {
         int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        String normalized = keyword == null ? "" : TextUtil.normalizeForSearch(keyword);
+        String pattern = "%" + escapeLike(normalized) + "%";
 
-        List<Ingredient> items = ingredientRepository
-                .findAll(buildSearchSpec(keyword, categoryId, cursor), PageRequest.of(0, pageSize + 1, Sort.by("id")))
-                .getContent();
+        List<Ingredient> items = ingredientRepository.searchIngredients(
+                cursor == null ? NIL_UUID : cursor,
+                categoryId == null,
+                categoryId == null ? NIL_UUID : categoryId,
+                pattern,
+                PageRequest.of(0, pageSize + 1));
 
         return appUtil.buildCursorResponse(items, pageSize, Ingredient::getId, ingredientMapper::toIngredientResponse);
+    }
+
+    private static String escapeLike(String value) {
+        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 
     @Transactional(readOnly = true)
@@ -116,31 +127,5 @@ public class IngredientService {
 
     private IngredientCategory findCategory(UUID categoryId) {
         return categoryRepository.findById(categoryId).orElseThrow(IngredientCategoryNotFoundException::new);
-    }
-
-    private Specification<Ingredient> buildSearchSpec(String keyword, UUID categoryId, UUID cursor) {
-        return (root, query, cb) -> {
-            if (query != null && !Long.class.equals(query.getResultType()) && !long.class.equals(query.getResultType())) {
-                root.fetch("category", JoinType.LEFT);
-            }
-
-            List<Predicate> predicates = new ArrayList<>();
-
-            if (keyword != null && !keyword.isBlank()) {
-                String pattern = "%" + escapeLike(TextUtil.normalizeForSearch(keyword)) + "%";
-                predicates.add(cb.like(root.get("searchName"), pattern, '\\'));
-            }
-            if (categoryId != null) {
-                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
-            }
-            if (cursor != null) {
-                predicates.add(cb.greaterThan(root.<UUID>get("id"), cursor));
-            }
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
-    }
-
-    private static String escapeLike(String value) {
-        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 }

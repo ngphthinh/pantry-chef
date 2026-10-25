@@ -26,8 +26,6 @@ public class Ingredient extends SoftDeletableEntity {
     private String name;
     @Enumerated(EnumType.STRING)
     private Unit defaultUnit;
-    @Column(name = "search_name")
-    private String searchName;
 
     @Column(unique = true)
     private String barcode;
@@ -35,10 +33,4 @@ public class Ingredient extends SoftDeletableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private IngredientCategory category;
-
-    @PrePersist
-    @PreUpdate
-    void updateSearchName() {
-        this.searchName = TextUtil.normalizeForSearch(this.name);
-    }
 }
