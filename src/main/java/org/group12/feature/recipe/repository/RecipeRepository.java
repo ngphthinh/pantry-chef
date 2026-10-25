@@ -62,4 +62,41 @@ public interface RecipeRepository extends JpaRepository<Recipe, UUID> {
                                 @Param("maxMinutes") Integer maxMinutes,
                                 @Param("excluded") Collection<String> excluded,
                                 Pageable pageable);
+
+    /** Một dòng (công thức, tên nguyên liệu) dùng để tìm và chấm điểm trong bộ nhớ. */
+    interface LocalIngredientRow {
+        UUID getRecipeId();
+
+        String getName();
+    }
+
+    /** Nguyên liệu của mọi công thức người dùng được xem: công thức không phải tự tạo + công thức tự tạo của chính họ. */
+    @Query("""
+            select r.id as recipeId, i.name as name
+            from Recipe r join r.ingredients i
+            where r.custom = false or r.owner.id = :userId
+            """)
+    List<LocalIngredientRow> findAccessibleIngredientRows(@Param("userId") UUID userId);
+
+    @Query("""
+            select i.recipe.id as recipeId, i.name as name
+            from RecipeIngredient i
+            where i.recipe.id in :ids
+            """)
+    List<LocalIngredientRow> findIngredientRowsByRecipeIds(@Param("ids") Collection<UUID> ids);
+
+    /** {@code pattern} là mẫu LIKE chữ thường, ký tự đặc biệt đã được escape bằng dấu gạch chéo ngược. */
+    @EntityGraph(attributePaths = "cuisine")
+    @Query("""
+            select r from Recipe r
+            where (r.custom = false or r.owner.id = :userId)
+              and lower(r.title) like :pattern escape '\\'
+            order by r.id desc
+            """)
+    List<Recipe> findAccessibleByTitle(@Param("userId") UUID userId,
+                                       @Param("pattern") String pattern,
+                                       Pageable pageable);
+
+    @EntityGraph(attributePaths = "cuisine")
+    List<Recipe> findByIdIn(Collection<UUID> ids);
 }

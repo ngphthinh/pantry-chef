@@ -24,6 +24,8 @@ import org.group12.feature.recipe.exception.InvalidRecipeCursorException;
 import org.group12.feature.recipe.exception.InvalidRecipeSearchException;
 import org.group12.feature.recipe.exception.InvalidServingsException;
 import org.group12.feature.recipe.exception.RecipeNotFoundException;
+import org.group12.feature.recipe.exception.RecipeProviderException;
+import org.group12.feature.recipe.exception.RecipeProviderQuotaExceededException;
 import org.group12.feature.recipe.mapper.CuisineMapper;
 import org.group12.feature.recipe.repository.CuisineRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -31,14 +33,17 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -64,6 +69,7 @@ public class RecipeService {
 
     private final RecipeProviderClient recipeProviderClient;
     private final RecipeImportService recipeImportService;
+    private final LocalRecipeSearchService localRecipeSearchService;
     private final CuisineRepository cuisineRepository;
     private final CuisineMapper cuisineMapper;
     private final PantryItemRepository pantryItemRepository;
@@ -82,18 +88,25 @@ public class RecipeService {
 
         Cuisine cuisine = cuisineId == null ? null
                 : cuisineRepository.findById(cuisineId).orElseThrow(CuisineNotFoundException::new);
+        List<String> excluded = excludedNames(userId);
+        Integer maxReadyMinutes = effectiveMaxMinutes(maxMinutes, difficulty);
+
+        List<RecipeSummaryResponse> local = parseOffset(cursor) == 0
+                ? localRecipeSearchService.searchByIngredients(userId, include, excluded, cuisineId, maxReadyMinutes, difficulty)
+                : List.of();
+
         if (cuisine != null && !recipeProviderClient.supportsCuisine(cuisine.getName())) {
-            return emptyPage();
+            return withLocal(local, this::emptyPage);
         }
 
         RecipeSearchCriteria criteria = new RecipeSearchCriteria(
                 include,
-                excludedNames(userId),
+                excluded,
                 null,
                 cuisine == null ? null : cuisine.getName(),
-                effectiveMaxMinutes(maxMinutes, difficulty),
+                maxReadyMinutes,
                 RecipeSort.MIN_MISSING_INGREDIENTS);
-        return searchPage(criteria, cursor, size, difficulty);
+        return withLocal(local, () -> searchPage(criteria, cursor, size, difficulty));
     }
 
     public CursorResponse<RecipeSummaryResponse> getSuggestions(String cursor, int size) {
@@ -104,9 +117,13 @@ public class RecipeService {
             return emptyPage();
         }
 
+        List<RecipeSummaryResponse> local = parseOffset(cursor) == 0
+                ? localRecipeSearchService.searchByIngredients(userId, include, excluded, null, null, null)
+                : List.of();
+
         RecipeSearchCriteria criteria = new RecipeSearchCriteria(
                 include, excluded, null, null, null, RecipeSort.MIN_MISSING_INGREDIENTS);
-        return searchPage(criteria, cursor, size, null);
+        return withLocal(local, () -> searchPage(criteria, cursor, size, null));
     }
 
     public CursorResponse<RecipeSummaryResponse> searchByName(String keyword, String cursor, int size) {
@@ -115,9 +132,14 @@ public class RecipeService {
             throw new InvalidRecipeSearchException();
         }
 
+        List<String> excluded = excludedNames(userId);
+        List<RecipeSummaryResponse> local = parseOffset(cursor) == 0
+                ? localRecipeSearchService.searchByName(userId, keyword, excluded)
+                : List.of();
+
         RecipeSearchCriteria criteria = new RecipeSearchCriteria(
-                List.of(), excludedNames(userId), keyword.trim(), null, null, RecipeSort.RELEVANCE);
-        return searchPage(criteria, cursor, size, null);
+                List.of(), excluded, keyword.trim(), null, null, RecipeSort.RELEVANCE);
+        return withLocal(local, () -> searchPage(criteria, cursor, size, null));
     }
 
     public CursorResponse<RecipeSummaryResponse> getPopular(String cursor, int size) {
@@ -180,6 +202,43 @@ public class RecipeService {
             log.info("External recipe {} was imported concurrently", externalId);
             return recipeImportService.findImported(externalId).orElseThrow(RecipeNotFoundException::new);
         }
+    }
+
+    /**
+     * Ghép kết quả trong DB (chỉ có ở trang đầu) lên trước kết quả từ API ngoài, bỏ món ngoài đã có sẵn trong DB.
+     * Nếu API ngoài lỗi hoặc hết quota mà DB có kết quả thì trả riêng kết quả DB thay vì báo lỗi.
+     */
+    private CursorResponse<RecipeSummaryResponse> withLocal(
+            List<RecipeSummaryResponse> local, Supplier<CursorResponse<RecipeSummaryResponse>> external) {
+        CursorResponse<RecipeSummaryResponse> remote;
+        try {
+            remote = external.get();
+        } catch (RecipeProviderException | RecipeProviderQuotaExceededException ex) {
+            if (local.isEmpty()) {
+                throw ex;
+            }
+            log.warn("Recipe provider unavailable, returning local results only: {}", ex.getMessage());
+            return CursorResponse.<RecipeSummaryResponse>builder()
+                    .content(local).hasNext(false).nextCursor(null).build();
+        }
+        if (local.isEmpty()) {
+            return remote;
+        }
+
+        Set<String> localExternalIds = local.stream()
+                .map(RecipeSummaryResponse::getExternalId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        List<RecipeSummaryResponse> merged = new ArrayList<>(local);
+        remote.getContent().stream()
+                .filter(item -> !localExternalIds.contains(item.getExternalId()))
+                .forEach(merged::add);
+
+        return CursorResponse.<RecipeSummaryResponse>builder()
+                .content(merged)
+                .hasNext(remote.isHasNext())
+                .nextCursor(remote.getNextCursor())
+                .build();
     }
 
     private CursorResponse<RecipeSummaryResponse> searchPage(
