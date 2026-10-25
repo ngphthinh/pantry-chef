@@ -39,13 +39,17 @@ public class CloudinaryMediaStorageService implements MediaStorageService {
 
 
 
-    @Async
+    @Async("taskExecutor")
     @Override
     public void delete(String publicId) {
+        if (publicId == null || publicId.isBlank()) {
+            return;
+        }
         try {
-            cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+            Map<?, ?> result = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+            log.info("Cloudinary destroy media publicId: {}, result: {}", publicId, result);
         } catch (IOException e) {
-            log.error("Delete media failed", e);
+            log.error("Delete media failed for publicId: {}", publicId, e);
             throw new UploadMediaException();
         }
     }
