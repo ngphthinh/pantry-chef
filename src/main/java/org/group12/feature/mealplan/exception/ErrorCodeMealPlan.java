@@ -8,7 +8,8 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCodeMealPlan implements BaseErrorCode {
     MEAL_PLAN_NOT_FOUND("MEALPLAN_404", "Meal plan not found", HttpStatus.NOT_FOUND),
     MEAL_PLAN_ENTRY_NOT_FOUND("MEALPLAN_ENTRY_404", "Meal plan entry not found", HttpStatus.NOT_FOUND),
-    MEAL_PLAN_WEEK_DUPLICATE("MEALPLAN_409", "Meal plan for this week already exists", HttpStatus.CONFLICT);
+    MEAL_PLAN_WEEK_DUPLICATE("MEALPLAN_409", "Meal plan for this week already exists", HttpStatus.CONFLICT),
+    MEAL_PLAN_ENTRY_DATE_INVALID("MEALPLAN_ENTRY_400", "Meal plan entry date must be within the meal plan week", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;

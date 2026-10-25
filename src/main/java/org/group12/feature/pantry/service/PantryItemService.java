@@ -116,6 +116,9 @@ public class PantryItemService {
     @Transactional
     public void delete(UUID id) {
         PantryItem item = findOwnedItem(id);
+        if (item.getPublicImgId() != null && !item.getPublicImgId().isBlank()) {
+            mediaStorageService.delete(item.getPublicImgId());
+        }
         pantryItemRepository.delete(item);
         log.info("Deleted pantry item {}", id);
     }
@@ -129,17 +132,17 @@ public class PantryItemService {
 
     @Transactional
     public PantryItemResponse uploadPhoto(UUID id, ImageUploadRequest file) {
-
         PantryItem item = findOwnedItem(id);
-
-        if (item.getPublicImgId() != null) {
-            mediaStorageService.delete(item.getPublicImgId()); // delete old photo if exists
-        }
+        String oldPublicId = item.getPublicImgId();
 
         UploadMediaResponse upload = mediaStorageService.uploadSync(file.getImage(), PHOTO_FOLDER, MediaType.IMAGE);
         item.setPhotoUri(upload.getUrl());
         item.setPublicImgId(upload.getPublicId());
         item = pantryItemRepository.saveAndFlush(item);
+
+        if (oldPublicId != null && !oldPublicId.isBlank()) {
+            mediaStorageService.delete(oldPublicId);
+        }
 
         log.info("Uploaded photo for pantry item {}", id);
         return pantryItemMapper.toResponse(item);

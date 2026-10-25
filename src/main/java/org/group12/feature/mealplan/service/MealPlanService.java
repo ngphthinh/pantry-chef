@@ -15,6 +15,7 @@ import org.group12.feature.mealplan.dto.response.MealPlanEntryResponse;
 import org.group12.feature.mealplan.dto.response.MealPlanResponse;
 import org.group12.feature.mealplan.entity.MealPlan;
 import org.group12.feature.mealplan.entity.MealPlanEntry;
+import org.group12.feature.mealplan.exception.MealPlanEntryDateInvalidException;
 import org.group12.feature.mealplan.exception.MealPlanEntryNotFoundException;
 import org.group12.feature.mealplan.exception.MealPlanNotFoundException;
 import org.group12.feature.mealplan.exception.MealPlanWeekDuplicateException;
@@ -87,6 +88,7 @@ public class MealPlanService {
 
         if (request.getEntries() != null && !request.getEntries().isEmpty()) {
             for (MealPlanEntryCreateRequest entryReq : request.getEntries()) {
+                validateEntryDateInWeek(entryReq.getDate(), request.getWeekStart());
                 Recipe recipe = null;
                 if (entryReq.getRecipeId() != null) {
 
@@ -115,6 +117,7 @@ public class MealPlanService {
     @Transactional
     public MealPlanEntryResponse addEntry(UUID mealPlanId, MealPlanEntryCreateRequest request) {
         MealPlan mealPlan = findOwnedMealPlan(mealPlanId);
+        validateEntryDateInWeek(request.getDate(), mealPlan.getWeekStart());
 
         Recipe recipe = null;
         if (request.getRecipeId() != null) {
@@ -131,10 +134,14 @@ public class MealPlanService {
 
     @Transactional
     public MealPlanEntryResponse updateEntry(UUID mealPlanId, UUID entryId, MealPlanEntryUpdateRequest request) {
-        findOwnedMealPlan(mealPlanId);
+        MealPlan mealPlan = findOwnedMealPlan(mealPlanId);
 
         MealPlanEntry entry = mealPlanEntryRepository.findByIdAndMealPlanId(entryId, mealPlanId)
                 .orElseThrow(MealPlanEntryNotFoundException::new);
+
+        if (request.getDate() != null) {
+            validateEntryDateInWeek(request.getDate(), mealPlan.getWeekStart());
+        }
 
         mealPlanEntryMapper.updateMealPlanEntry(request, entry);
         log.info("Updated entry {} in meal plan {}", entryId, mealPlanId);
@@ -143,11 +150,12 @@ public class MealPlanService {
 
     @Transactional
     public void deleteEntry(UUID mealPlanId, UUID entryId) {
-        findOwnedMealPlan(mealPlanId);
+        MealPlan mealPlan = findOwnedMealPlan(mealPlanId);
 
         MealPlanEntry entry = mealPlanEntryRepository.findByIdAndMealPlanId(entryId, mealPlanId)
                 .orElseThrow(MealPlanEntryNotFoundException::new);
 
+        mealPlan.getEntries().removeIf(e -> e.getId().equals(entryId));
         mealPlanEntryRepository.delete(entry);
         log.info("Deleted entry {} from meal plan {}", entryId, mealPlanId);
     }
@@ -250,6 +258,7 @@ public class MealPlanService {
                         .setScale(2, RoundingMode.HALF_UP)
                         .doubleValue();
                 shoppingList.add(ShoppingItemResponse.builder()
+                        .id(appUtil.generateUUID())
                         .name(item.getDisplayName())
                         .quantity(roundedAmount)
                         .unit(item.getUnit())
@@ -265,5 +274,12 @@ public class MealPlanService {
         UUID userId = appUtil.userIdFromAuthentication();
         return mealPlanRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(MealPlanNotFoundException::new);
+    }
+
+    private void validateEntryDateInWeek(LocalDate entryDate, LocalDate weekStart) {
+        LocalDate weekEnd = weekStart.plusDays(6);
+        if (entryDate.isBefore(weekStart) || entryDate.isAfter(weekEnd)) {
+            throw new MealPlanEntryDateInvalidException();
+        }
     }
 }

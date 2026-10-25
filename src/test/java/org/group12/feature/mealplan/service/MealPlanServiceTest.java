@@ -6,10 +6,12 @@ import org.group12.feature.auth.entity.User;
 import org.group12.feature.auth.repository.UserRepository;
 import org.group12.feature.ingredient.entity.Ingredient;
 import org.group12.feature.mealplan.dto.request.MealPlanCreateRequest;
+import org.group12.feature.mealplan.dto.request.MealPlanEntryCreateRequest;
 import org.group12.feature.mealplan.dto.response.MealPlanResponse;
 import org.group12.feature.mealplan.entity.MealPlan;
 import org.group12.feature.mealplan.entity.MealPlanEntry;
 import org.group12.feature.mealplan.enums.MealType;
+import org.group12.feature.mealplan.exception.MealPlanEntryDateInvalidException;
 import org.group12.feature.mealplan.exception.MealPlanWeekDuplicateException;
 import org.group12.feature.mealplan.mapper.MealPlanEntryMapper;
 import org.group12.feature.mealplan.mapper.MealPlanMapper;
@@ -129,6 +131,29 @@ class MealPlanServiceTest {
     }
 
     @Test
+    void create_InvalidEntryDate_ThrowsException() {
+        LocalDate weekStart = LocalDate.of(2026, 10, 19);
+        when(appUtil.userIdFromAuthentication()).thenReturn(userId);
+        when(mealPlanRepository.existsByUserIdAndWeekStart(userId, weekStart)).thenReturn(false);
+        when(mealPlanMapper.toMealPlan(any())).thenReturn(mealPlan);
+        when(appUtil.generateUUID()).thenReturn(mealPlanId);
+        when(userRepository.getReferenceById(userId)).thenReturn(user);
+
+        MealPlanEntryCreateRequest invalidEntry = MealPlanEntryCreateRequest.builder()
+                .date(LocalDate.of(2026, 10, 26)) // 7 days later (outside week [19..25])
+                .mealType(MealType.DINNER)
+                .servings(2)
+                .build();
+
+        MealPlanCreateRequest request = MealPlanCreateRequest.builder()
+                .weekStart(weekStart)
+                .entries(List.of(invalidEntry))
+                .build();
+
+        assertThrows(MealPlanEntryDateInvalidException.class, () -> mealPlanService.create(request));
+    }
+
+    @Test
     void create_Success() {
         LocalDate weekStart = LocalDate.of(2026, 10, 19);
         when(appUtil.userIdFromAuthentication()).thenReturn(userId);
@@ -165,9 +190,24 @@ class MealPlanServiceTest {
     }
 
     @Test
+    void deleteEntry_Success() {
+        UUID entryId = mealPlan.getEntries().get(0).getId();
+        when(appUtil.userIdFromAuthentication()).thenReturn(userId);
+        when(mealPlanRepository.findByIdAndUserId(mealPlanId, userId)).thenReturn(Optional.of(mealPlan));
+        when(mealPlanEntryRepository.findByIdAndMealPlanId(entryId, mealPlanId))
+                .thenReturn(Optional.of(mealPlan.getEntries().get(0)));
+
+        mealPlanService.deleteEntry(mealPlanId, entryId);
+
+        assertTrue(mealPlan.getEntries().isEmpty());
+        verify(mealPlanEntryRepository, times(1)).delete(any(MealPlanEntry.class));
+    }
+
+    @Test
     void getShoppingListPreview_CalculatesCorrectly() {
         when(appUtil.userIdFromAuthentication()).thenReturn(userId);
         when(mealPlanRepository.findByIdAndUserId(mealPlanId, userId)).thenReturn(Optional.of(mealPlan));
+        when(appUtil.generateUUID()).thenReturn(UUID.randomUUID());
 
         // In pantry: user already has 2 Trứng gà, but 0 Hành tây
         PantryItem eggPantry = PantryItem.builder()
@@ -189,10 +229,12 @@ class MealPlanServiceTest {
                 .filter(i -> i.getName().equalsIgnoreCase("Trứng gà"))
                 .findFirst().orElseThrow();
         assertEquals(2.0, eggItem.getQuantity());
+        assertNotNull(eggItem.getId());
 
         ShoppingItemResponse onionItem = shoppingList.stream()
                 .filter(i -> i.getName().equalsIgnoreCase("Hành tây"))
                 .findFirst().orElseThrow();
         assertEquals(2.0, onionItem.getQuantity());
+        assertNotNull(onionItem.getId());
     }
 }

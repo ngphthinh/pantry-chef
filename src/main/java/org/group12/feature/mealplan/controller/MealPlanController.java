@@ -95,16 +95,19 @@ public class MealPlanController {
                 .build();
     }
 
-    // DELETE /v1/meal-plans/{id}/entries/{entryId}
     @DeleteMapping("/{id}/entries/{entryId}")
-    @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
-    public void deleteEntry(
+    public ApiResponse<MealPlanResponse> deleteEntry(
             @PathVariable UUID id,
             @PathVariable UUID entryId
     ) {
         mealPlanService.deleteEntry(id, entryId);
+        MealPlanResponse m = mealPlanService.getById(id);
+        return ApiResponse.<MealPlanResponse>builder()
+                .code(MealPlanResponseCode.MEAL_PLAN_ENTRY_DELETED.getCode())
+                .message(MealPlanResponseCode.MEAL_PLAN_ENTRY_DELETED.getMessage())
+                .data(m)
+                .build();
     }
-
     // POST /v1/meal-plans/{id}/copy?toWeekStart=
     @PostMapping("/{id}/copy")
     public ApiResponse<MealPlanResponse> copy(
