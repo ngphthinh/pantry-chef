@@ -275,7 +275,7 @@ public class InitData implements CommandLineRunner {
 
     private void initCuisines() {
         if (cuisineRepository.count() == 0) {
-            List<Cuisine> cuisines = Stream.of("VIETNAMESE:Vietnamese", "ASIAN:Asian", "WESTERN:Western", "ITALIAN:Italian", "OTHER:Other")
+            List<Cuisine> cuisines = Stream.of("VIETNAMESE:Việt nam", "ASIAN:Châu á", "WESTERN:Phương tây", "ITALIAN:Ý", "OTHER:Khác")
                     .map(s -> s.split(":"))
                     .map(p -> Cuisine.builder().id(appUtil.generateUUID()).code(p[0]).name(p[1]).build())
                     .toList();
