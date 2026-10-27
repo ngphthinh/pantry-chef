@@ -33,7 +33,7 @@ public interface PantryItemRepository extends JpaRepository<PantryItem, UUID> {
                 WHERE p.user.id = :userId
                   AND (:categoryId IS NULL OR c.id = :categoryId)
                   AND (:location IS NULL OR p.location = :location)
-                  AND (:keyword IS NULL OR LOWER(i.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+                  AND (:keyword IS NULL OR LOWER(i.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')))
                 ORDER BY p.id DESC
             """)
     List<PantryItem> findItemsFirstPage(
@@ -43,7 +43,6 @@ public interface PantryItemRepository extends JpaRepository<PantryItem, UUID> {
             @Param("keyword") String keyword,
             Pageable pageable
     );
-
     @Query("""
                 SELECT p FROM PantryItem p
                 JOIN FETCH p.ingredient i
@@ -52,7 +51,7 @@ public interface PantryItemRepository extends JpaRepository<PantryItem, UUID> {
                   AND p.id < :cursor
                   AND (:categoryId IS NULL OR c.id = :categoryId)
                   AND (:location IS NULL OR p.location = :location)
-                  AND (:keyword IS NULL OR LOWER(i.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+                  AND (:keyword IS NULL OR LOWER(i.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')))
                 ORDER BY p.id DESC
             """)
     List<PantryItem> findItemsNextPage(
