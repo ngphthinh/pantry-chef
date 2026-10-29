@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +15,14 @@ import java.util.UUID;
 public interface IngredientRepository extends JpaRepository<Ingredient, UUID>, JpaSpecificationExecutor<Ingredient> {
 
     Optional<Ingredient> findByBarcode(String barcode);
+
+    /** Tìm theo tên đã chuẩn hoá (cắt khoảng trắng, chữ thường). Sắp theo id để kết quả ổn định khi trùng tên. */
+    @Query("""
+            SELECT i FROM Ingredient i
+            WHERE lower(trim(i.name)) IN :names
+            ORDER BY i.id ASC
+            """)
+    List<Ingredient> findByNormalizedNameIn(@Param("names") Collection<String> names);
 
     boolean existsByBarcode(String barcode);
 
