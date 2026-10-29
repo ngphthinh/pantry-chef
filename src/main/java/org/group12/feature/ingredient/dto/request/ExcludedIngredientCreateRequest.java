@@ -1,6 +1,5 @@
 package org.group12.feature.ingredient.dto.request;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -13,10 +12,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Data
-@Schema(description = "Request DTO for creating a new ingredient")
 public class ExcludedIngredientCreateRequest {
     @NotBlank(message = "Name is required")
-    @Schema(description = "Name of the excluded ingredient", example = "Peanuts")
     @Size(max = 255, message = "Name must be at most 255 characters")
     private String name;
 }

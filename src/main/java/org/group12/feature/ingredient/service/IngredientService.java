@@ -1,7 +1,5 @@
 package org.group12.feature.ingredient.service;
 
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.group12.common.dto.response.CursorResponse;
@@ -20,13 +18,10 @@ import org.group12.feature.ingredient.mapper.IngredientMapper;
 import org.group12.feature.ingredient.repository.IngredientCategoryRepository;
 import org.group12.feature.ingredient.repository.IngredientRepository;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,26 +37,25 @@ public class IngredientService {
     private final IngredientMapper ingredientMapper;
     private final AppUtil appUtil;
 
-    private static final UUID NIL_UUID = new UUID(0L, 0L);
-
+    /**
+     * Tìm / gợi ý nguyên liệu, không phân biệt hoa thường và dấu tiếng Việt ("ca chua" ra "Cà chua").
+     * Phân trang cursor theo id (UUID v7 tăng dần theo thời gian tạo).
+     */
     @Transactional(readOnly = true)
     public CursorResponse<IngredientResponse> searchIngredient(String keyword, UUID categoryId, UUID cursor, int size) {
         int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         String normalized = keyword == null ? "" : TextUtil.normalizeForSearch(keyword);
         String pattern = "%" + escapeLike(normalized) + "%";
 
-        List<Ingredient> items = ingredientRepository.searchIngredients(
-                cursor == null ? NIL_UUID : cursor,
-                categoryId == null,
-                categoryId == null ? NIL_UUID : categoryId,
+        // lấy dư 1 phần tử để biết còn trang sau hay không
+        List<Ingredient> items = ingredientRepository.search(
                 pattern,
+                categoryId == null,
+                appUtil.orNil(categoryId),
+                appUtil.orNil(cursor),
                 PageRequest.of(0, pageSize + 1));
 
         return appUtil.buildCursorResponse(items, pageSize, Ingredient::getId, ingredientMapper::toIngredientResponse);
-    }
-
-    private static String escapeLike(String value) {
-        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 
     @Transactional(readOnly = true)
@@ -115,6 +109,10 @@ public class IngredientService {
 
         return ingredientMapper.toIngredientResponse(ingredientRepository.save(ingredient));
     }
+
+    /**
+     * Xóa mềm (qua @SQLDelete trên entity).
+     */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteIngredient(UUID id) {
@@ -127,5 +125,10 @@ public class IngredientService {
 
     private IngredientCategory findCategory(UUID categoryId) {
         return categoryRepository.findById(categoryId).orElseThrow(IngredientCategoryNotFoundException::new);
+    }
+
+    // dùng '!' làm ký tự escape (khớp với ESCAPE '!' trong IngredientRepository.search)
+    private static String escapeLike(String value) {
+        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 }

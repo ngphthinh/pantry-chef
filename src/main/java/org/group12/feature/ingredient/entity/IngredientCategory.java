@@ -21,7 +21,9 @@ public class IngredientCategory extends BaseEntity {
     private String code;
     @Column(nullable = false)
     private String name;
+
+    // 0 = nhóm bình thường (sắp theo id giảm dần, mới nhất lên đầu); 1 = nhóm ghim cuối danh sách ("Khác").
     @ColumnDefault("0")
     @Column(nullable = false)
     private int sortOrder;
-}
+}

@@ -8,7 +8,7 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface ExcludedIngredientMapper {
-    ExcludedIngredientResponse toExcludedIngredientResponse(ExcludedIngredient excludedIngredient);
+    ExcludedIngredientResponse toResponse(ExcludedIngredient excludedIngredient);
 
-    List<ExcludedIngredientResponse> toExcludedIngredientResponses(List<ExcludedIngredient> excludedIngredients);
+    List<ExcludedIngredientResponse> toResponses(List<ExcludedIngredient> excludedIngredients);
 }

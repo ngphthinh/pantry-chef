@@ -17,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-
+/**
+ * Nguyên liệu loại trừ của người dùng hiện tại. Bản ghi của người khác coi như không tồn tại (404).
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -29,14 +31,14 @@ public class ExcludedIngredientService {
     private final AppUtil appUtil;
 
     @Transactional(readOnly = true)
-    public List<ExcludedIngredientResponse> getMyExcludedIngredients() {
+    public List<ExcludedIngredientResponse> getMine() {
         UUID userId = appUtil.userIdFromAuthentication();
-        return excludedIngredientMapper.toExcludedIngredientResponses(
+        return excludedIngredientMapper.toResponses(
                 excludedIngredientRepository.findAllByUserIdOrderByCreatedAtAsc(userId));
     }
 
     @Transactional
-    public ExcludedIngredientResponse addExcludedIngredient(ExcludedIngredientCreateRequest request) {
+    public ExcludedIngredientResponse add(ExcludedIngredientCreateRequest request) {
         UUID userId = appUtil.userIdFromAuthentication();
         String name = request.getName().trim();
 
@@ -50,11 +52,11 @@ public class ExcludedIngredientService {
                 .user(userRepository.getReferenceById(userId))
                 .build();
 
-        return excludedIngredientMapper.toExcludedIngredientResponse(excludedIngredientRepository.save(entity));
+        return excludedIngredientMapper.toResponse(excludedIngredientRepository.save(entity));
     }
 
     @Transactional
-    public void removeExcludedIngredient(UUID id) {
+    public void remove(UUID id) {
         UUID userId = appUtil.userIdFromAuthentication();
         ExcludedIngredient entity = excludedIngredientRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(ExcludedIngredientNotFoundException::new);

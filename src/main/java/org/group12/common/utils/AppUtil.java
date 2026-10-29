@@ -20,6 +20,11 @@ import java.util.function.Function;
 @Component
 @NoArgsConstructor
 public class AppUtil {
+    public static final UUID NIL_UUID = new UUID(0L, 0L);
+
+    public UUID orNil(UUID value) {
+        return value == null ? NIL_UUID : value;
+    }
 
     public UUID generateUUID() {
         return UuidCreator.getTimeOrderedEpoch();

@@ -13,7 +13,6 @@ import org.group12.feature.ingredient.mapper.IngredientCategoryMapper;
 import org.group12.feature.ingredient.repository.IngredientCategoryRepository;
 import org.group12.feature.ingredient.repository.IngredientRepository;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,16 +29,17 @@ public class IngredientCategoryService {
     private final IngredientCategoryMapper categoryMapper;
     private final AppUtil appUtil;
 
-
+    /**
+     * Thứ tự: sortOrder tăng dần (0 trước, 1 = ghim cuối), cùng sortOrder thì id giảm dần (mới thêm lên đầu).
+     */
     @Transactional(readOnly = true)
-    public List<IngredientCategoryResponse> getIngredientCategories() {
+    public List<IngredientCategoryResponse> getAll() {
         Sort sort = Sort.by(Sort.Direction.ASC, "sortOrder").and(Sort.by(Sort.Direction.DESC, "id"));
-        return categoryMapper.toIngredientCategoryResponses(categoryRepository.findAll(sort));
+        return categoryMapper.toResponses(categoryRepository.findAll(sort));
     }
 
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
-    public IngredientCategoryResponse createIngredientCategory(IngredientCategoryRequest request) {
+    public IngredientCategoryResponse create(IngredientCategoryRequest request) {
         if (categoryRepository.existsByCode(request.getCode())) {
             throw new IngredientCategoryCodeDuplicateException();
         }
@@ -50,13 +50,12 @@ public class IngredientCategoryService {
                 .name(request.getName().trim())
                 .build();
 
-        return categoryMapper.toIngredientCategoryResponse(categoryRepository.save(category));
+        return categoryMapper.toResponse(categoryRepository.save(category));
     }
 
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
-    public IngredientCategoryResponse updateIngredientCategory(UUID id, IngredientCategoryRequest request) {
-        IngredientCategory category = findCategoryOrThrow(id);
+    public IngredientCategoryResponse update(UUID id, IngredientCategoryRequest request) {
+        IngredientCategory category = findCategory(id);
 
         if (!category.getCode().equals(request.getCode()) && categoryRepository.existsByCode(request.getCode())) {
             throw new IngredientCategoryCodeDuplicateException();
@@ -65,12 +64,15 @@ public class IngredientCategoryService {
         category.setCode(request.getCode());
         category.setName(request.getName().trim());
 
-        return categoryMapper.toIngredientCategoryResponse(categoryRepository.save(category));
+        return categoryMapper.toResponse(categoryRepository.save(category));
     }
+
+    /**
+     * Xóa cứng; chặn khi còn nguyên liệu (kể cả đã xóa mềm) tham chiếu tới nhóm.
+     */
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
-    public void deleteIngredientCategory(UUID id) {
-        IngredientCategory category = findCategoryOrThrow(id);
+    public void delete(UUID id) {
+        IngredientCategory category = findCategory(id);
 
         if (ingredientRepository.existsAnyByCategoryId(id)) {
             throw new IngredientCategoryInUseException();
@@ -79,7 +81,7 @@ public class IngredientCategoryService {
         categoryRepository.delete(category);
     }
 
-    private IngredientCategory findCategoryOrThrow(UUID id) {
+    private IngredientCategory findCategory(UUID id) {
         return categoryRepository.findById(id).orElseThrow(IngredientCategoryNotFoundException::new);
     }
 }

@@ -23,7 +23,7 @@ public class IngredientController {
 
     // GET /v1/ingredients/search?q=&categoryId=&cursor=&size=
     @GetMapping("/search")
-    public ApiResponse<CursorResponse<IngredientResponse>> searchIngredient(
+    public ApiResponse<CursorResponse<IngredientResponse>> search(
             @RequestParam(name = "q", required = false) String q,
             @RequestParam(name = "categoryId", required = false) UUID categoryId,
             @RequestParam(name = "cursor", required = false) UUID cursor,
@@ -38,7 +38,7 @@ public class IngredientController {
 
     // GET /v1/ingredients/barcode/{code}
     @GetMapping("/barcode/{code}")
-    public ApiResponse<IngredientResponse> getIngredientByBarcode(@PathVariable("code") String code) {
+    public ApiResponse<IngredientResponse> getByBarcode(@PathVariable("code") String code) {
         return ApiResponse.<IngredientResponse>builder()
                 .code(IngredientResponseCode.INGREDIENT_BARCODE_SUCCESS.getCode())
                 .message(IngredientResponseCode.INGREDIENT_BARCODE_SUCCESS.getMessage())
@@ -48,7 +48,7 @@ public class IngredientController {
 
     // GET /v1/ingredients/{id}
     @GetMapping("/{id}")
-    public ApiResponse<IngredientResponse> getIngredientById(@PathVariable("id") UUID id) {
+    public ApiResponse<IngredientResponse> getById(@PathVariable("id") UUID id) {
         return ApiResponse.<IngredientResponse>builder()
                 .code(IngredientResponseCode.INGREDIENT_GET_SUCCESS.getCode())
                 .message(IngredientResponseCode.INGREDIENT_GET_SUCCESS.getMessage())
@@ -57,9 +57,9 @@ public class IngredientController {
     }
 
     // POST /v1/ingredients
+    
     @PostMapping
-    @ResponseStatus(code = org.springframework.http.HttpStatus.CREATED)
-    public ApiResponse<IngredientResponse> createIngredient(@Valid @RequestBody IngredientCreateRequest request) {
+    public ApiResponse<IngredientResponse> create(@Valid @RequestBody IngredientCreateRequest request) {
         return ApiResponse.<IngredientResponse>builder()
                 .code(IngredientResponseCode.INGREDIENT_CREATE_SUCCESS.getCode())
                 .message(IngredientResponseCode.INGREDIENT_CREATE_SUCCESS.getMessage())
@@ -68,8 +68,9 @@ public class IngredientController {
     }
 
     // PUT /v1/ingredients/{id}
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ApiResponse<IngredientResponse> updateIngredient(
+    public ApiResponse<IngredientResponse> update(
             @PathVariable("id") UUID id,
             @Valid @RequestBody IngredientUpdateRequest request) {
         return ApiResponse.<IngredientResponse>builder()
@@ -80,9 +81,13 @@ public class IngredientController {
     }
 
     // DELETE /v1/ingredients/{id}
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    @ResponseStatus(code = org.springframework.http.HttpStatus.NO_CONTENT)
-    public void deleteIngredient(@PathVariable("id") UUID id) {
+    public ApiResponse<Void> delete(@PathVariable("id") UUID id) {
         ingredientService.deleteIngredient(id);
+        return ApiResponse.<Void>builder()
+                .code(IngredientResponseCode.INGREDIENT_DELETE_SUCCESS.getCode())
+                .message(IngredientResponseCode.INGREDIENT_DELETE_SUCCESS.getMessage())
+                .build();
     }
 }
