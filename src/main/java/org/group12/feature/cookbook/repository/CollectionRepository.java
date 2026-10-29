@@ -22,6 +22,14 @@ public interface CollectionRepository extends JpaRepository<Collection, UUID> {
             """)
     List<CollectionResponse> findAllByUser(@Param("userId") UUID userId);
 
+
+    @Query("""
+            select c from Collection c
+            left join fetch c.savedRecipes sr
+            where c.id = :id and c.user.id = :userId
+            """)
+    Optional<Collection> findCollectionByIdAndUserId (UUID id, UUID userId);
+
     Optional<Collection> findByIdAndUserId(UUID id, UUID userId);
 
     boolean existsByUserIdAndNameIgnoreCaseAndIdNot(UUID userId, String name, UUID id);
