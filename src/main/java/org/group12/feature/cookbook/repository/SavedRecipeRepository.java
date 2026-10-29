@@ -1,6 +1,6 @@
 package org.group12.feature.cookbook.repository;
 
-import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.repository.query.Param;
 import org.group12.feature.cookbook.entity.SavedRecipe;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
