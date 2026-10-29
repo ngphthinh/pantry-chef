@@ -42,11 +42,14 @@ public class SavedRecipeController {
             @RequestParam(required = false) UUID cursor,
             @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size,
             @RequestParam(required = false) Boolean favorite,
-            @RequestParam(required = false) UUID collectionId) {
+            @RequestParam(required = false) UUID collectionId,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) @Min(1) @Max(5) Integer minRating)
+    {
         return ApiResponse.<CursorResponse<SavedRecipeResponse>>builder()
                 .code(CookbookResponseCode.SAVED_RECIPE_LIST_SUCCESS.getCode())
                 .message(CookbookResponseCode.SAVED_RECIPE_LIST_SUCCESS.getMessage())
-                .data(service.list(cursor, size, favorite, collectionId))
+                .data(service.list(cursor, size, favorite, collectionId, keyword, minRating))
                 .build();
     }
 

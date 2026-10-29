@@ -14,22 +14,26 @@ public interface SavedRecipeRepository extends JpaRepository<SavedRecipe, UUID> 
     Optional<SavedRecipe> findByUserIdAndRecipeId(UUID userId, UUID recipeId);
 
     @Query("""
-        select s from SavedRecipe s
-        join fetch s.recipe
-        where s.user.id = :userId
-          and (:cursor is null or s.id > :cursor)
-          and (:favorite is null or s.favorite = :favorite)
-          and (:collectionId is null or exists (
-                select 1 from Collection c join c.savedRecipes sr
-                where c.id = :collectionId
-                  and c.user.id = :userId
-                  and sr.id = s.id))
-        order by s.id asc
-        """)
+    select s from SavedRecipe s
+    join fetch s.recipe r
+    where s.user.id = :userId
+      and (:cursor is null or s.id > :cursor)
+      and (:favorite is null or s.favorite = :favorite)
+      and (:minRating is null or s.rating >= :minRating)
+      and lower(r.title) like :pattern escape '\\'
+      and (:collectionId is null or exists (
+            select 1 from Collection c join c.savedRecipes sr
+            where c.id = :collectionId
+              and c.user.id = :userId
+              and sr.id = s.id))
+    order by s.id asc
+    """)
     List<SavedRecipe> findPage(@Param("userId") UUID userId,
                                @Param("cursor") UUID cursor,
                                @Param("favorite") Boolean favorite,
                                @Param("collectionId") UUID collectionId,
+                               @Param("minRating") Integer minRating,
+                               @Param("pattern") String pattern,
                                Pageable pageable);
 
     @Query("""

@@ -35,6 +35,14 @@ public class SavedRecipeService {
     private final SavedRecipeMapper mapper;
     private final AppUtil appUtil;
 
+    /** Không có từ khoá thì trả "%" (khớp tất cả), tránh tham số null kiểu chuỗi trong JPQL. */
+    private static String toLikePattern(String keyword) {
+        if (keyword == null || keyword.isBlank()) return "%";
+        String escaped = keyword.trim().toLowerCase()
+                .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return "%" + escaped + "%";
+    }
+
     @Transactional
     public SavedRecipeResponse save(SavedRecipeCreateRequest req) {
         UUID userId = appUtil.userIdFromAuthentication();
@@ -56,14 +64,16 @@ public class SavedRecipeService {
     }
 
     @Transactional(readOnly = true)
-    public CursorResponse<SavedRecipeResponse> list(UUID cursor, int size,
-                                                    Boolean favorite, UUID collectionId) {
+    public CursorResponse<SavedRecipeResponse> list(UUID cursor, int size, Boolean favorite,
+                                                    UUID collectionId, String keyword, Integer minRating) {
         UUID userId = appUtil.userIdFromAuthentication();
         List<SavedRecipe> rows = savedRecipeRepository.findPage(
-                userId, cursor, favorite, collectionId, PageRequest.of(0, size + 1));
+                userId, cursor, favorite, collectionId, minRating,
+                toLikePattern(keyword), PageRequest.of(0, size + 1));
 
         return appUtil.buildCursorResponse(rows, size, SavedRecipe::getId, mapper::toSavedRecipeResponse);
     }
+
 
     private Recipe resolveRecipe(SavedRecipeCreateRequest req) {
         if (req.getRecipeId() != null) {
