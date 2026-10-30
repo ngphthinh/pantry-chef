@@ -29,6 +29,7 @@ public final class TextUtil {
             char base = group.charAt(0);
             for (int i = 1; i < group.length(); i++) {
                 char c = group.charAt(i);
+                // cả chữ thường và chữ hoa, để không phụ thuộc locale của DB khi hạ chữ thường
                 from.append(c).append(Character.toUpperCase(c));
                 to.append(base).append(base);
             }
@@ -39,6 +40,11 @@ public final class TextUtil {
 
     private TextUtil() {
     }
+
+    /**
+     * Chuẩn hóa từ khóa tìm kiếm: bỏ dấu tiếng Việt, chữ thường, gộp khoảng trắng.
+     * Ví dụ: "  Cà  Chua " -> "ca chua".
+     */
     public static String normalizeForSearch(String input) {
         if (input == null) {
             return null;

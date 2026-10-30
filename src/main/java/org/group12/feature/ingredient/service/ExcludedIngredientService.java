@@ -11,13 +11,17 @@ import org.group12.feature.ingredient.exception.ExcludedIngredientDuplicateExcep
 import org.group12.feature.ingredient.exception.ExcludedIngredientNotFoundException;
 import org.group12.feature.ingredient.mapper.ExcludedIngredientMapper;
 import org.group12.feature.ingredient.repository.ExcludedIngredientRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
-
+/**
+ * Nguyên liệu loại trừ của người dùng hiện tại.
+ * Bản ghi của người khác coi như không tồn tại (404).
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -28,15 +32,18 @@ public class ExcludedIngredientService {
     private final ExcludedIngredientMapper excludedIngredientMapper;
     private final AppUtil appUtil;
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Transactional(readOnly = true)
-    public List<ExcludedIngredientResponse> getMyExcludedIngredients() {
+    public List<ExcludedIngredientResponse> getMine() {
         UUID userId = appUtil.userIdFromAuthentication();
-        return excludedIngredientMapper.toExcludedIngredientResponses(
+
+        return excludedIngredientMapper.toResponses(
                 excludedIngredientRepository.findAllByUserIdOrderByCreatedAtAsc(userId));
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Transactional
-    public ExcludedIngredientResponse addExcludedIngredient(ExcludedIngredientCreateRequest request) {
+    public ExcludedIngredientResponse add(ExcludedIngredientCreateRequest request) {
         UUID userId = appUtil.userIdFromAuthentication();
         String name = request.getName().trim();
 
@@ -50,14 +57,19 @@ public class ExcludedIngredientService {
                 .user(userRepository.getReferenceById(userId))
                 .build();
 
-        return excludedIngredientMapper.toExcludedIngredientResponse(excludedIngredientRepository.save(entity));
+        return excludedIngredientMapper.toResponse(
+                excludedIngredientRepository.save(entity));
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Transactional
-    public void removeExcludedIngredient(UUID id) {
+    public void remove(UUID id) {
         UUID userId = appUtil.userIdFromAuthentication();
-        ExcludedIngredient entity = excludedIngredientRepository.findByIdAndUserId(id, userId)
+
+        ExcludedIngredient entity = excludedIngredientRepository
+                .findByIdAndUserId(id, userId)
                 .orElseThrow(ExcludedIngredientNotFoundException::new);
+
         excludedIngredientRepository.delete(entity);
     }
 }
