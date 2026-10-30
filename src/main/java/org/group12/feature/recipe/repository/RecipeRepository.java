@@ -39,6 +39,14 @@ public interface RecipeRepository extends JpaRepository<Recipe, UUID> {
 
     Optional<Recipe> findByIdAndOwnerIdAndCustomTrue(UUID id, UUID ownerId);
 
+    /** Công thức người dùng được xem (không phải tự tạo của người khác), kèm nguyên liệu. */
+    @Query("""
+            select r from Recipe r
+            left join fetch r.ingredients
+            where r.id = :id and (r.custom = false or r.owner.id = :userId)
+            """)
+    Optional<Recipe> findAccessibleDetailById(@Param("id") UUID id, @Param("userId") UUID userId);
+
     @EntityGraph(attributePaths = "cuisine")
     List<Recipe> findByCustomTrueAndOwnerIdOrderByIdDesc(UUID ownerId, Pageable pageable);
 

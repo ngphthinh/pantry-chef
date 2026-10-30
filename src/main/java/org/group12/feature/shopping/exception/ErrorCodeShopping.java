@@ -7,7 +7,8 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum ErrorCodeShopping implements BaseErrorCode {
     SHOPPING_LIST_NOT_FOUND("SHOPPING_001", "Shopping list not found", HttpStatus.NOT_FOUND),
-    SHOPPING_ITEM_NOT_FOUND("SHOPPING_002", "Shopping item not found", HttpStatus.NOT_FOUND);
+    SHOPPING_ITEM_NOT_FOUND("SHOPPING_002", "Shopping item not found", HttpStatus.NOT_FOUND),
+    SHOPPING_NOTHING_TO_BUY("SHOPPING_003", "There is nothing to buy for this request", HttpStatus.UNPROCESSABLE_ENTITY);
 
     private final String code;
     private final String message;
