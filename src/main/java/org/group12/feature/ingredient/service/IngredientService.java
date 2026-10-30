@@ -1,6 +1,8 @@
 package org.group12.feature.ingredient.service;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.group12.feature.auth.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.group12.common.dto.response.CursorResponse;
 import org.group12.common.utils.AppUtil;
@@ -19,6 +21,7 @@ import org.group12.feature.ingredient.repository.IngredientCategoryRepository;
 import org.group12.feature.ingredient.repository.IngredientRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,44 +39,49 @@ public class IngredientService {
     private final IngredientCategoryRepository categoryRepository;
     private final IngredientMapper ingredientMapper;
     private final AppUtil appUtil;
+    private final EntityManager entityManager;
 
-    /**
-     * Tìm / gợi ý nguyên liệu, không phân biệt hoa thường và dấu tiếng Việt ("ca chua" ra "Cà chua").
-     * Phân trang cursor theo id (UUID v7 tăng dần theo thời gian tạo).
-     */
     @Transactional(readOnly = true)
-    public CursorResponse<IngredientResponse> searchIngredient(String keyword, UUID categoryId, UUID cursor, int size) {
+    public CursorResponse<IngredientResponse> searchIngredient(
+            String keyword, UUID categoryId, UUID cursor, int size) {
+
+        UUID userId = appUtil.userIdFromAuthentication();
         int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         String normalized = keyword == null ? "" : TextUtil.normalizeForSearch(keyword);
         String pattern = "%" + escapeLike(normalized) + "%";
 
-        // lấy dư 1 phần tử để biết còn trang sau hay không
         List<Ingredient> items = ingredientRepository.search(
                 pattern,
                 categoryId == null,
                 appUtil.orNil(categoryId),
+                userId,
                 appUtil.orNil(cursor),
                 PageRequest.of(0, pageSize + 1));
 
-        return appUtil.buildCursorResponse(items, pageSize, Ingredient::getId, ingredientMapper::toIngredientResponse);
+        return appUtil.buildCursorResponse(
+                items, pageSize, Ingredient::getId,
+                ingredientMapper::toIngredientResponse);
     }
 
     @Transactional(readOnly = true)
     public IngredientResponse getIngredientById(UUID id) {
-        return ingredientMapper.toIngredientResponse(findIngredient(id));
+        UUID userId = appUtil.userIdFromAuthentication();
+        return ingredientMapper.toIngredientResponse(findVisibleIngredient(id, userId));
     }
 
     @Transactional(readOnly = true)
     public IngredientResponse getIngredientByBarcode(String barcode) {
-        return ingredientRepository.findByBarcode(barcode.trim())
+        UUID userId = appUtil.userIdFromAuthentication();
+        return ingredientRepository.findVisibleByBarcode(barcode.trim(), userId)
                 .map(ingredientMapper::toIngredientResponse)
                 .orElseThrow(IngredientBarcodeNotFoundException::new);
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
     public IngredientResponse createIngredient(IngredientCreateRequest request) {
-        IngredientCategory category = findCategory(request.getCategoryId());
+        UUID userId = appUtil.userIdFromAuthentication();
+        IngredientCategory category = findCategory(request.getCategoryId(), appUtil.userIdFromAuthentication());
 
         String barcode = request.getBarcode();
         if (barcode != null && ingredientRepository.existsByBarcode(barcode)) {
@@ -86,16 +94,18 @@ public class IngredientService {
                 .defaultUnit(request.getDefaultUnit())
                 .barcode(barcode)
                 .category(category)
+                .owner(isAdmin() ? null : entityManager.getReference(User.class, userId))
                 .build();
 
-        return ingredientMapper.toIngredientResponse(ingredientRepository.save(ingredient));
+        return ingredientMapper.toIngredientResponse(
+                ingredientRepository.save(ingredient));
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
     public IngredientResponse updateIngredient(UUID id, IngredientUpdateRequest request) {
-        Ingredient ingredient = findIngredient(id);
-        IngredientCategory category = findCategory(request.getCategoryId());
+        Ingredient ingredient = findEditableIngredient(id);
+        IngredientCategory category = findCategory(request.getCategoryId(), appUtil.userIdFromAuthentication());
 
         String barcode = request.getBarcode();
         if (barcode != null && ingredientRepository.existsByBarcodeAndIdNot(barcode, id)) {
@@ -107,28 +117,48 @@ public class IngredientService {
         ingredient.setBarcode(barcode);
         ingredient.setCategory(category);
 
-        return ingredientMapper.toIngredientResponse(ingredientRepository.save(ingredient));
+        return ingredientMapper.toIngredientResponse(
+                ingredientRepository.save(ingredient));
     }
 
-    /**
-     * Xóa mềm (qua @SQLDelete trên entity).
-     */
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
     public void deleteIngredient(UUID id) {
-        ingredientRepository.delete(findIngredient(id));
+        ingredientRepository.delete(findEditableIngredient(id));
     }
 
-    private Ingredient findIngredient(UUID id) {
-        return ingredientRepository.findById(id).orElseThrow(IngredientNotFoundException::new);
+    private Ingredient findVisibleIngredient(UUID id, UUID userId) {
+        return ingredientRepository.findVisibleById(id, userId)
+                .orElseThrow(IngredientNotFoundException::new);
+    }
+    private Ingredient findEditableIngredient(UUID id) {
+        UUID userId = appUtil.userIdFromAuthentication();
+        Ingredient ingredient = findVisibleIngredient(id, userId);
+
+        boolean editable = ingredient.getOwner() == null
+                ? isAdmin()
+                : userId.equals(ingredient.getOwner().getId());
+        if (!editable) {
+            throw new IngredientNotFoundException();
+        }
+        return ingredient;
     }
 
-    private IngredientCategory findCategory(UUID categoryId) {
-        return categoryRepository.findById(categoryId).orElseThrow(IngredientCategoryNotFoundException::new);
+    private IngredientCategory findCategory(UUID categoryId, UUID userId) {
+        return categoryRepository.findVisibleById(categoryId, userId)
+                .orElseThrow(IngredientCategoryNotFoundException::new);
     }
 
-    // dùng '!' làm ký tự escape (khớp với ESCAPE '!' trong IngredientRepository.search)
+    private static boolean isAdmin() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+    }
+
+    // Dùng '!' làm ký tự escape (khớp với ESCAPE '!' trong IngredientRepository.search)
     private static String escapeLike(String value) {
-        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
+        return value.replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
     }
 }

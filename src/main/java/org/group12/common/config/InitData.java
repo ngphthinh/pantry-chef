@@ -140,33 +140,36 @@ public class InitData implements CommandLineRunner {
     }
 
     private void initIngredientCategories() {
-        if (ingredientCategoryRepository.count() == 0) {
-            List<String> rows = new ArrayList<>(List.of(
-                    "VEGETABLE:Rau củ", "FRUIT:Trái cây", "MEAT:Thịt", "SEAFOOD:Hải sản", "EGG:Trứng",
-                    "DAIRY:Sữa và chế phẩm từ sữa", "GRAIN:Gạo, bột, ngũ cốc", "LEGUME_NUT:Đậu và hạt",
-                    "SPICE_HERB:Gia vị và rau thơm", "SAUCE_CONDIMENT:Nước chấm và sốt", "OIL_FAT:Dầu mỡ",
-                    "CANNED_PROCESSED:Đồ hộp và thực phẩm chế biến sẵn", "BEVERAGE:Đồ uống", "OTHER:Khác"));
-            // sortOrder: nhóm cuối danh sách ("Khác") = 1 để luôn nằm dưới cùng, các nhóm còn lại = 0
-            List<IngredientCategory> categories = new ArrayList<>();
-            for (int i = 0; i < rows.size(); i++) {
-                String[] p = rows.get(i).split(":");
-                categories.add(IngredientCategory.builder()
-                        .id(appUtil.generateUUID())
-                        .code(p[0])
-                        .name(p[1])
-                        .sortOrder(i == rows.size() - 1 ? 1 : 0)
-                        .build());
-            }
-            ingredientCategoryRepository.saveAll(categories);
-        }
-    }
-
-    private void initIngredients() {
-        if (ingredientRepository.count() > 0) {
+        // Chỉ khởi tạo khi chưa có danh mục của hệ thống (danh mục người dùng tự tạo không tính)
+        if (ingredientCategoryRepository.existsByOwnerIsNull()) {
             return;
         }
 
-        Map<String, IngredientCategory> categories = ingredientCategoryRepository.findAll().stream()
+        List<String> rows = new ArrayList<>(List.of(
+                "VEGETABLE:Rau củ", "FRUIT:Trái cây", "MEAT:Thịt", "SEAFOOD:Hải sản", "EGG:Trứng",
+                "DAIRY:Sữa và chế phẩm từ sữa", "GRAIN:Gạo, bột, ngũ cốc", "LEGUME_NUT:Đậu và hạt",
+                "SPICE_HERB:Gia vị và rau thơm", "SAUCE_CONDIMENT:Nước chấm và sốt", "OIL_FAT:Dầu mỡ",
+                "CANNED_PROCESSED:Đồ hộp và thực phẩm chế biến sẵn", "BEVERAGE:Đồ uống", "OTHER:Khác"));
+        // sortOrder: nhóm cuối danh sách ("Khác") = 1 để luôn nằm dưới cùng, các nhóm còn lại = 0
+        List<IngredientCategory> categories = new ArrayList<>();
+        for (int i = 0; i < rows.size(); i++) {
+            String[] p = rows.get(i).split(":");
+            categories.add(IngredientCategory.builder()
+                    .id(appUtil.generateUUID())
+                    .code(p[0])
+                    .name(p[1])
+                    .sortOrder(i == rows.size() - 1 ? 1 : 0)
+                    .owner(null) // danh mục của hệ thống
+                    .build());
+        }
+        ingredientCategoryRepository.saveAll(categories);
+    }
+    private void initIngredients() {
+        if (ingredientRepository.existsByOwnerIsNull()) {
+            return;
+        }
+
+        Map<String, IngredientCategory> categories = ingredientCategoryRepository.findAllByOwnerIsNull().stream()
                 .collect(Collectors.toMap(IngredientCategory::getCode, Function.identity()));
 
         Map<String, String[]> data = new LinkedHashMap<>();
@@ -203,6 +206,7 @@ public class InitData implements CommandLineRunner {
                         .defaultUnit(Unit.valueOf(p[1]))
                         .barcode(p.length > 2 ? p[2] : null)
                         .category(category)
+                        .owner(null)
                         .build());
             }
         });

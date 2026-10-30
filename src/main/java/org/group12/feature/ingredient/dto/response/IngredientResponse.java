@@ -18,4 +18,5 @@ public class IngredientResponse {
     private Unit defaultUnit;
     private String barcode;
     private IngredientCategoryResponse category;
+    private boolean system;
 }
