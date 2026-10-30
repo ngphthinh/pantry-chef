@@ -31,6 +31,8 @@ import org.group12.feature.recipe.entity.RecipeStep;
 import org.group12.feature.recipe.enums.Difficulty;
 import org.group12.feature.recipe.repository.CuisineRepository;
 import org.group12.feature.recipe.repository.RecipeRepository;
+import org.group12.feature.shopping.entity.ShoppingList;
+import org.group12.feature.shopping.repository.ShoppingListRepository;
 import org.group12.feature.sysc.entity.SyncStatus;
 import org.group12.feature.sysc.repository.SyncStatusRepository;
 import org.jspecify.annotations.NonNull;
@@ -79,6 +81,7 @@ public class InitData implements CommandLineRunner {
     private final ExcludedIngredientRepository excludedIngredientRepository;
     private final SyncStatusRepository syncStatusRepository;
     private final MealPlanRepository mealPlanRepository;
+    private final ShoppingListRepository shoppingListRepository;
 
 
     @Value("${app.password-default}")
@@ -91,7 +94,6 @@ public class InitData implements CommandLineRunner {
     public void run(String @NonNull ... args) {
         if (!"create".equals(initData) && !"create-drop".equals(initData)) {
             log.info("Skipping data initialization because spring.jpa.hibernate.ddl-auto is not 'create' or 'create-drop'");
-
         } else {
             initRoles();
             initUsers();
@@ -106,10 +108,30 @@ public class InitData implements CommandLineRunner {
             initSavedRecipes();
             initCollections();
             initFeedbacks();
+            initShoppingLists();
+            initCustom();
 
             log.info("Data initialization completed successfully.");
         }
 
+    }
+
+    private void initShoppingLists() {
+        if (shoppingListRepository.count() > 0) {
+            return;
+        }
+        Faker faker = new Faker();
+        User admin = userRepository.findByEmail("admin@gmail.com").orElseThrow(IllegalAccessError::new);
+        List<ShoppingList> shoppingLists = new ArrayList<>();
+        // Create some sample shopping lists for the admin user
+        for (int i = 0; i < 50; i++) {
+            shoppingLists.add(ShoppingList.builder()
+                    .id(appUtil.generateUUID())
+                    .user(admin)
+                    .name(faker.lorem().sentence(3))
+                    .build());
+        }
+        shoppingListRepository.saveAll(shoppingLists);
     }
 
     private void initSyncStatuses() {
@@ -271,6 +293,26 @@ public class InitData implements CommandLineRunner {
             List<Role> roles = List.of(Role.builder().id(appUtil.generateUUID()).name(RoleName.ROLE_ADMIN).build(), Role.builder().id(appUtil.generateUUID()).name(RoleName.ROLE_USER).build());
             roleRepository.saveAll(roles);
         }
+    }
+
+    private void initCustom() {
+        Faker faker = new Faker();
+        User admin = userRepository.findByEmail("admin@gmail.com").orElseThrow(IllegalAccessError::new);
+        List<Recipe> savedRecipe = new ArrayList<>();
+        for (int i = 0; i < 50; i++) {
+            savedRecipe.add(Recipe.builder()
+                    .id(appUtil.generateUUID())
+                    .title(faker.food().dish())
+                    .imageUrl("https://picsum.photos/seed/recipe" + i + "/600/400")
+                    .servings(faker.number().numberBetween(1, 8))
+                    .readyInMinutes(faker.number().numberBetween(10, 120))
+                    .difficulty(Difficulty.values()[faker.number().numberBetween(0, Difficulty.values().length)])
+                    .custom(true)
+                    .owner(admin)
+                    .build());
+        }
+
+        recipeRepository.saveAll(savedRecipe);
     }
 
     private void initCuisines() {
@@ -517,6 +559,7 @@ public class InitData implements CommandLineRunner {
         savedRecipeRepository.saveAll(saved);
         log.info("Seeded {} saved recipes for admin", saved.size());
     }
+
     private static final List<String> COLLECTION_NAMES = List.of(
             "Món yêu thích", "Nấu nhanh ngày thường", "Cuối tuần", "Món chay", "Tiệc gia đình");
 
