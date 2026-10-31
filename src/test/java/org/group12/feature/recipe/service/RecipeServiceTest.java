@@ -397,4 +397,18 @@ class RecipeServiceTest {
         assertEquals("Trứng chiên", result.getContent().get(0).getTitle());
         assertEquals(2, result.getContent().size());
     }
+
+    @Test
+    void searchByIngredients_noLimitOnIngredientCount() {
+        authenticate();
+        when(excludedIngredientRepository.findByUserId(userId)).thenReturn(List.of());
+        when(recipeProviderClient.search(any(), eq(0), eq(20))).thenReturn(new ExternalRecipePage(List.of(), 0));
+        List<String> many = java.util.stream.IntStream.range(0, 30).mapToObj(i -> "nl" + i).toList();
+
+        recipeService.searchByIngredients(many, null, 20, null, null, null);
+
+        ArgumentCaptor<RecipeSearchCriteria> captor = ArgumentCaptor.forClass(RecipeSearchCriteria.class);
+        verify(recipeProviderClient).search(captor.capture(), eq(0), eq(20));
+        assertEquals(30, captor.getValue().includeIngredients().size());
+    }
 }

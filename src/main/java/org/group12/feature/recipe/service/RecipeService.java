@@ -81,7 +81,7 @@ public class RecipeService {
     public CursorResponse<RecipeSummaryResponse> searchByIngredients(
             List<String> ingredients, String cursor, int size, UUID cuisineId, Integer maxMinutes, Difficulty difficulty) {
         UUID userId = appUtil.userIdFromAuthentication();
-        List<String> include = normalizeNames(ingredients).stream().limit(MAX_SEARCH_INGREDIENTS).toList();
+        List<String> include = normalizeNames(ingredients);
         if (include.isEmpty() || (maxMinutes != null && maxMinutes <= 0)) {
             throw new InvalidRecipeSearchException();
         }
@@ -142,16 +142,8 @@ public class RecipeService {
         return withLocal(local, () -> searchPage(criteria, cursor, size, null));
     }
 
-    public CursorResponse<RecipeSummaryResponse> getPopular(String cursor, int size) {
-        UUID userId = appUtil.userIdFromAuthentication();
-
-        RecipeSearchCriteria criteria = new RecipeSearchCriteria(
-                List.of(), excludedNames(userId), null, null, null, RecipeSort.POPULARITY);
-        return searchPage(criteria, cursor, size, null);
-    }
-
     public List<RecipeSummaryResponse> getRandom(int count) {
-        int limit = Math.clamp(count, 1, MAX_RANDOM_COUNT);
+        int limit = Math.min(Math.max(count, 1), MAX_RANDOM_COUNT);
         return toSummaries(recipeProviderClient.getRandom(limit));
     }
 
@@ -244,7 +236,7 @@ public class RecipeService {
     private CursorResponse<RecipeSummaryResponse> searchPage(
             RecipeSearchCriteria criteria, String cursor, int size, Difficulty difficultyFilter) {
         int offset = parseOffset(cursor);
-        int limit = Math.clamp(size, 1, MAX_PAGE_SIZE);
+        int limit = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
 
         ExternalRecipePage page = recipeProviderClient.search(criteria, offset, limit);
 

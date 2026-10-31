@@ -79,18 +79,6 @@ public class RecipeController {
                 .build();
     }
 
-    // GET /v1/recipes/popular?cursor=&size=
-    @GetMapping("/popular")
-    public ApiResponse<CursorResponse<RecipeSummaryResponse>> popular(
-            @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "20") int size) {
-        return ApiResponse.<CursorResponse<RecipeSummaryResponse>>builder()
-                .code(RecipeResponseCode.RECIPES_FETCHED.getCode())
-                .message(RecipeResponseCode.RECIPES_FETCHED.getMessage())
-                .data(recipeService.getPopular(cursor, size))
-                .build();
-    }
-
     // GET /v1/recipes/{externalId}
     @GetMapping("/{externalId}")
     public ApiResponse<RecipeDetailResponse> getDetail(@PathVariable String externalId) {

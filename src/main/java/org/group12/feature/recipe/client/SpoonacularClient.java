@@ -1,7 +1,7 @@
 package org.group12.feature.recipe.client;
 
 import lombok.extern.slf4j.Slf4j;
-import org.group12.common.utils.AppUtil;
+import org.group12.common.enums.Unit;
 import org.group12.feature.recipe.client.SpoonacularPayload.ExtendedIngredient;
 import org.group12.feature.recipe.client.SpoonacularPayload.Information;
 import org.group12.feature.recipe.client.SpoonacularPayload.Instruction;
@@ -31,11 +31,16 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.group12.common.exception.AppException;
 
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * Cài đặt {@link RecipeProviderClient} cho Spoonacular (<a href="https://spoonacular.com/food-api/docs">...</a>).
+ * Cài đặt {@link RecipeProviderClient} cho Spoonacular (https://spoonacular.com/food-api/docs).
  * Khóa API gửi qua header {@code x-api-key}, không nằm trong URL nên không lọt vào log.
  */
 @Slf4j
@@ -51,9 +56,7 @@ public class SpoonacularClient implements RecipeProviderClient {
     private static final String IMAGE_URL_TEMPLATE = "https://img.spoonacular.com/recipes/%s-312x231.%s";
 
     private static final String SORT_MIN_MISSING = "min-missing-ingredients";
-    private static final String SORT_POPULARITY = "popularity";
     private static final String DIRECTION_ASC = "asc";
-    private static final String DIRECTION_DESC = "desc";
 
     private static final int SECONDS_PER_MINUTE = 60;
     private static final int SECONDS_PER_HOUR = 3600;
@@ -70,12 +73,10 @@ public class SpoonacularClient implements RecipeProviderClient {
 
     private final RestClient restClient;
     private final String apiKey;
-    private final AppUtil appUtil;
 
-    public SpoonacularClient(RestClient restClient, @Value("${app.recipe.provider.api-key}") String apiKey, AppUtil appUtil) {
+    public SpoonacularClient(RestClient restClient, @Value("${app.recipe.provider.api-key}") String apiKey) {
         this.restClient = restClient;
         this.apiKey = apiKey;
-        this.appUtil = appUtil;
     }
 
     @Override
@@ -104,10 +105,6 @@ public class SpoonacularClient implements RecipeProviderClient {
             case MIN_MISSING_INGREDIENTS -> {
                 query.put("sort", SORT_MIN_MISSING);
                 query.put("sortDirection", DIRECTION_ASC);
-            }
-            case POPULARITY -> {
-                query.put("sort", SORT_POPULARITY);
-                query.put("sortDirection", DIRECTION_DESC);
             }
             case RELEVANCE -> {
                 // mặc định của nhà cung cấp
@@ -250,19 +247,36 @@ public class SpoonacularClient implements RecipeProviderClient {
                 info.getReadyInMinutes(), info.getSourceUrl(), firstOrNull(info.getCuisines()), ingredients, steps);
     }
 
-    private Optional<ExternalRecipeIngredient> toIngredient(ExtendedIngredient ingredient) {
+    private java.util.Optional<ExternalRecipeIngredient> toIngredient(ExtendedIngredient ingredient) {
         String name = ingredient.getName() != null && !ingredient.getName().isBlank() ? ingredient.getName() : ingredient.getOriginal();
         if (name == null || name.isBlank()) {
             return java.util.Optional.empty();
         }
         Measure metric = ingredient.getMeasures() == null ? null : ingredient.getMeasures().getMetric();
         if (metric != null && metric.getAmount() != null) {
-            return java.util.Optional.of(new ExternalRecipeIngredient(name.trim(), metric.getAmount(), appUtil.toUnit(metric.getUnitShort())));
+            return java.util.Optional.of(new ExternalRecipeIngredient(name.trim(), metric.getAmount(), toUnit(metric.getUnitShort())));
         }
-        return Optional.of(new ExternalRecipeIngredient(name.trim(), ingredient.getAmount(), appUtil.toUnit(ingredient.getUnit())));
+        return java.util.Optional.of(new ExternalRecipeIngredient(name.trim(), ingredient.getAmount(), toUnit(ingredient.getUnit())));
     }
 
-
+    /** Đơn vị không có trong {@link Unit} (clove, slice, large, ...) được xem là đếm theo cái (PCS). */
+    static Unit toUnit(String unit) {
+        if (unit == null) {
+            return Unit.PCS;
+        }
+        return switch (unit.trim().toLowerCase(Locale.ROOT)) {
+            case "mg", "milligram", "milligrams" -> Unit.MG;
+            case "g", "gram", "grams" -> Unit.G;
+            case "kg", "kilogram", "kilograms" -> Unit.KG;
+            case "ml", "milliliter", "milliliters", "millilitre", "millilitres" -> Unit.ML;
+            case "l", "liter", "liters", "litre", "litres" -> Unit.L;
+            case "tbsp", "tbsps", "tablespoon", "tablespoons" -> Unit.TBSP;
+            case "tsp", "tsps", "teaspoon", "teaspoons" -> Unit.TSP;
+            case "cup", "cups" -> Unit.CUP;
+            case "pinch", "pinches" -> Unit.PINCH;
+            default -> Unit.PCS;
+        };
+    }
 
     private Integer toSeconds(StepLength length) {
         if (length == null || length.getNumber() == null || length.getUnit() == null) {
@@ -281,7 +295,7 @@ public class SpoonacularClient implements RecipeProviderClient {
     }
 
     private static String firstOrNull(List<String> values) {
-        return values == null || values.isEmpty() ? null : values.getFirst();
+        return values == null || values.isEmpty() ? null : values.get(0);
     }
 
     private static void putIfNotBlank(Map<String, Object> map, String key, String value) {
