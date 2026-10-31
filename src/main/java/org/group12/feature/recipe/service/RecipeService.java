@@ -100,6 +100,7 @@ public class RecipeService {
     public CursorResponse<RecipeSummaryResponse> searchByIngredients(
             List<String> ingredients, String cursor, int size, UUID cuisineId, Integer maxMinutes, Difficulty difficulty) {
         UUID userId = appUtil.userIdFromAuthentication();
+
         List<String> include = normalizeNames(ingredients);
         if (include.isEmpty() || (maxMinutes != null && maxMinutes <= 0)) {
             throw new InvalidRecipeSearchException();
@@ -177,6 +178,8 @@ public class RecipeService {
      * Trả công thức từ bản sao cục bộ nếu đã có; chưa có thì lấy từ API ngoài và lưu lại (nên response luôn có {@code id}).
      */
     public RecipeDetailResponse getByExternalId(String externalId) {
+        UUID userId = appUtil.userIdFromAuthentication();
+
         requireValidExternalId(externalId);
         Optional<RecipeDetailResponse> local = recipeImportService.findImported(externalId);
         if (local.isPresent() && hasContent(local.get())) {
@@ -199,7 +202,7 @@ public class RecipeService {
             return recipeImportService.completeRecipe(external);
         }
         try {
-            return recipeImportService.importRecipe(external);
+            return recipeImportService.importRecipe(external, userId);
         } catch (DataIntegrityViolationException ex) {
             // request khác (hoặc lần tìm kiếm) vừa lưu cùng công thức: bổ sung chi tiết vào bản đã lưu
             log.info("External recipe {} was saved concurrently", externalId);
@@ -310,6 +313,7 @@ public class RecipeService {
      */
     private Map<String, UUID> saveSummaries(List<ExternalRecipeSummary> items, Map<String, Cuisine> cuisinesByName) {
         Map<String, UUID> ids = new HashMap<>();
+        UUID userId = appUtil.userIdFromAuthentication();
         List<String> externalIds = items.stream().map(ExternalRecipeSummary::externalId).filter(Objects::nonNull).toList();
         if (externalIds.isEmpty()) {
             return ids;
@@ -329,7 +333,7 @@ public class RecipeService {
             Cuisine cuisine = item.cuisineName() == null ? null
                     : cuisinesByName.get(item.cuisineName().toLowerCase(Locale.ROOT));
             try {
-                ids.put(item.externalId(), recipeImportService.importSummary(item, cuisine));
+                ids.put(item.externalId(), recipeImportService.importSummary(item, cuisine, userId));
             } catch (DataAccessException ex) {
                 log.warn("Could not save recipe {}: {}", item.externalId(), ex.getMessage());
             }

@@ -24,7 +24,7 @@ public interface RecipeRepository extends JpaRepository<Recipe, UUID> {
             select r from Recipe r
             left join fetch r.cuisine
             left join fetch r.ingredients
-            where r.externalId = :externalId
+            where r.externalId = :externalId and r.custom = false
             """)
     Optional<Recipe> findDetailByExternalId(@Param("externalId") String externalId);
 
@@ -111,11 +111,13 @@ public interface RecipeRepository extends JpaRepository<Recipe, UUID> {
         UUID getId();
     }
 
-    @Query("select r.externalId as externalId, r.id as id from Recipe r where r.externalId in :externalIds")
+    @Query("select r.externalId as externalId, r.id as id from Recipe r where r.externalId in :externalIds ")
     List<ExternalIdRow> findIdsByExternalIdIn(@Param("externalIds") Collection<String> externalIds);
 
     /** Khóa dòng để hai request cùng bổ sung chi tiết cho một công thức không ghi đè nhau. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select r from Recipe r where r.externalId = :externalId")
+    @Query("select r from Recipe r where r.externalId = :externalId ")
     Optional<Recipe> findForUpdateByExternalId(@Param("externalId") String externalId);
+
+
 }

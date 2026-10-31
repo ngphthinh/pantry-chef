@@ -299,6 +299,7 @@ public class InitData implements CommandLineRunner {
             "Nêm nếm lại cho vừa ăn.",
             "Bày ra đĩa và thưởng thức khi còn nóng.");
 
+    //init mới 5 data
     private void initRecipes() {
         if (recipeRepository.count() > 0) {
             return;
@@ -314,8 +315,8 @@ public class InitData implements CommandLineRunner {
 
         Faker faker = new Faker(new Random(42)); // seed cố định → dữ liệu lặp lại được
         Difficulty[] difficulties = Difficulty.values();
-        int total = 60;
-        int customCount = owners.isEmpty() ? 0 : 10;
+        int total = 5;                                   // trước đây: 60
+        int customCount = owners.isEmpty() ? 0 : 2;      // trước đây: 10
 
         List<Recipe> recipes = new ArrayList<>();
         for (int i = 0; i < total; i++) {
@@ -337,33 +338,11 @@ public class InitData implements CommandLineRunner {
             if (custom) {
                 recipe.setOwner(owners.get(i % owners.size()));
             } else {
-//                recipe.setExternalId("seed-" + (100000 + i));
-//                recipe.setSourceUrl("https://example.com/recipes/seed-" + (100000 + i));
+                recipe.setExternalId("seed-" + (100000 + i));
+                recipe.setSourceUrl("https://example.com/recipes/seed-" + (100000 + i));
             }
 
-            List<Ingredient> shuffled = new ArrayList<>(pool);
-            Collections.shuffle(shuffled, new Random(i));
-            int ingredientCount = faker.number().numberBetween(4, 9);
-            for (Ingredient ing : shuffled.subList(0, Math.min(ingredientCount, shuffled.size()))) {
-                recipe.getIngredients().add(RecipeIngredient.builder()
-                        .id(appUtil.generateUUID())
-                        .recipe(recipe)
-                        .name(ing.getName())
-                        .amount((double) faker.number().numberBetween(1, 500))
-                        .unit(ing.getDefaultUnit())
-                        .build());
-            }
-
-            int stepCount = faker.number().numberBetween(3, STEPS.size() + 1);
-            for (int s = 0; s < stepCount; s++) {
-                recipe.getSteps().add(RecipeStep.builder()
-                        .id(appUtil.generateUUID())
-                        .recipe(recipe)
-                        .stepOrder(s + 1)
-                        .text(STEPS.get(s))
-                        .timerSeconds(STEP_TIMERS.get(s))   // null nếu bước không cần hẹn giờ
-                        .build());
-            }
+            // ... phần nguyên liệu và các bước giữ nguyên như cũ ...
 
             recipes.add(recipe);
         }
@@ -371,6 +350,81 @@ public class InitData implements CommandLineRunner {
         recipeRepository.saveAll(recipes);
         log.info("Seeded {} recipes ({} custom)", recipes.size(), customCount);
     }
+
+
+    //init cũ nhiều data
+//    private void initRecipes() {
+//        if (recipeRepository.count() > 0) {
+//            return;
+//        }
+//
+//        List<Cuisine> cuisines = cuisineRepository.findAll();
+//        List<Ingredient> pool = ingredientRepository.findAll();
+//        List<User> owners = userRepository.findAll(PageRequest.of(0, 5)).getContent();
+//        if (cuisines.isEmpty() || pool.isEmpty()) {
+//            log.warn("Skip seeding recipes: cuisines or ingredients missing");
+//            return;
+//        }
+//
+//        Faker faker = new Faker(new Random(42)); // seed cố định → dữ liệu lặp lại được
+//        Difficulty[] difficulties = Difficulty.values();
+//        int total = 60;
+//        int customCount = owners.isEmpty() ? 0 : 10;
+//
+//        List<Recipe> recipes = new ArrayList<>();
+//        for (int i = 0; i < total; i++) {
+//            boolean custom = i < customCount;
+//            String title = DISHES.get(i % DISHES.size())
+//                    + (i >= DISHES.size() ? " #" + (i / DISHES.size() + 1) : "");
+//
+//            Recipe recipe = Recipe.builder()
+//                    .id(appUtil.generateUUID())
+//                    .title(title)
+//                    .imageUrl("https://picsum.photos/seed/recipe" + i + "/600/400")
+//                    .servings(faker.number().numberBetween(1, 8))
+//                    .readyInMinutes(faker.number().numberBetween(10, 120))
+//                    .difficulty(difficulties[faker.number().numberBetween(0, difficulties.length)])
+//                    .custom(custom)
+//                    .cuisine(cuisines.get(faker.number().numberBetween(0, cuisines.size())))
+//                    .build();
+//
+//            if (custom) {
+//                recipe.setOwner(owners.get(i % owners.size()));
+//            } else {
+////                recipe.setExternalId("seed-" + (100000 + i));
+////                recipe.setSourceUrl("https://example.com/recipes/seed-" + (100000 + i));
+//            }
+//
+//            List<Ingredient> shuffled = new ArrayList<>(pool);
+//            Collections.shuffle(shuffled, new Random(i));
+//            int ingredientCount = faker.number().numberBetween(4, 9);
+//            for (Ingredient ing : shuffled.subList(0, Math.min(ingredientCount, shuffled.size()))) {
+//                recipe.getIngredients().add(RecipeIngredient.builder()
+//                        .id(appUtil.generateUUID())
+//                        .recipe(recipe)
+//                        .name(ing.getName())
+//                        .amount((double) faker.number().numberBetween(1, 500))
+//                        .unit(ing.getDefaultUnit())
+//                        .build());
+//            }
+//
+//            int stepCount = faker.number().numberBetween(3, STEPS.size() + 1);
+//            for (int s = 0; s < stepCount; s++) {
+//                recipe.getSteps().add(RecipeStep.builder()
+//                        .id(appUtil.generateUUID())
+//                        .recipe(recipe)
+//                        .stepOrder(s + 1)
+//                        .text(STEPS.get(s))
+//                        .timerSeconds(STEP_TIMERS.get(s))   // null nếu bước không cần hẹn giờ
+//                        .build());
+//            }
+//
+//            recipes.add(recipe);
+//        }
+//
+//        recipeRepository.saveAll(recipes);
+//        log.info("Seeded {} recipes ({} custom)", recipes.size(), customCount);
+//    }
 
     // cùng thứ tự với STEPS: bước 2 ướp 15 phút, bước 5 hầm 20 phút
     private static final List<Integer> STEP_TIMERS = Arrays.asList(

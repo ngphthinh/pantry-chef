@@ -82,6 +82,7 @@ public class CustomRecipeService {
 
     @Transactional(readOnly = true)
     public RecipeDetailResponse getById(UUID id) {
+
         return recipeMapper.toDetailResponse(findOwnedWithDetails(id));
     }
 

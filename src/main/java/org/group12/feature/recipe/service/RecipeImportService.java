@@ -3,6 +3,7 @@ package org.group12.feature.recipe.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.group12.common.utils.AppUtil;
+import org.group12.feature.auth.repository.UserRepository;
 import org.group12.feature.recipe.client.model.ExternalRecipeDetail;
 import org.group12.feature.recipe.client.model.ExternalRecipeSummary;
 import org.group12.feature.recipe.dto.response.RecipeDetailResponse;
@@ -40,6 +41,7 @@ public class RecipeImportService {
     private final CuisineRepository cuisineRepository;
     private final RecipeMapper recipeMapper;
     private final AppUtil appUtil;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public Optional<RecipeDetailResponse> findImported(String externalId) {
@@ -51,7 +53,7 @@ public class RecipeImportService {
      *                                                                 {@code externalId} (ràng buộc unique)
      */
     @Transactional
-    public RecipeDetailResponse importRecipe(ExternalRecipeDetail detail) {
+    public RecipeDetailResponse importRecipe(ExternalRecipeDetail detail, UUID userId) {
         Recipe recipe = Recipe.builder()
                 .id(appUtil.generateUUID())
                 .externalId(detail.externalId())
@@ -62,6 +64,9 @@ public class RecipeImportService {
                 .difficulty(Difficulty.fromReadyInMinutes(detail.readyInMinutes()))
                 .sourceUrl(detail.sourceUrl())
                 .custom(false)
+//                .owner(userRepository.findById(appUtil.userIdFromAuthentication()).orElse(null))
+                .owner(userRepository.getReferenceById(userId))
+
                 .cuisine(findCuisine(detail.cuisineName()))
                 .build();
 
@@ -85,7 +90,7 @@ public class RecipeImportService {
      * {@link #completeRecipe} khi người dùng mở chi tiết công thức.
      */
     @Transactional
-    public UUID importSummary(ExternalRecipeSummary summary, Cuisine cuisine) {
+    public UUID importSummary(ExternalRecipeSummary summary, Cuisine cuisine, UUID userId) {
         String title = summary.title().trim();
         Recipe recipe = Recipe.builder()
                 .id(appUtil.generateUUID())
@@ -96,6 +101,8 @@ public class RecipeImportService {
                 .readyInMinutes(summary.readyInMinutes())
                 .difficulty(Difficulty.fromReadyInMinutes(summary.readyInMinutes()))
                 .custom(false)
+//                .owner(userRepository.findById(appUtil.userIdFromAuthentication()).orElse(null))
+                .owner(userRepository.getReferenceById(userId))
                 .cuisine(cuisine)
                 .build();
         return recipeRepository.saveAndFlush(recipe).getId();
