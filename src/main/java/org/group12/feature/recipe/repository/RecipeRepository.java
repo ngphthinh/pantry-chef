@@ -1,14 +1,14 @@
 package org.group12.feature.recipe.repository;
 
-import org.group12.feature.recipe.dto.projection.MissingRow;
-import org.group12.feature.recipe.dto.projection.RecipeMatchRow;
 import org.group12.feature.recipe.entity.Recipe;
-import org.group12.feature.recipe.enums.Difficulty;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.LockModeType;
 
 import java.util.*;
 
@@ -55,6 +55,7 @@ public interface RecipeRepository extends JpaRepository<Recipe, UUID> {
             where (r.custom = false or r.owner.id = :userId)
               and (c.id = :cuisineId or :cuisineId is null)
               and (r.readyInMinutes <= :maxMinutes or :maxMinutes is null)
+              and exists (select 1 from RecipeIngredient x where x.recipe = r)
               and not exists (
                     select 1 from RecipeIngredient i
                     where i.recipe = r and lower(i.name) in :excluded)
@@ -103,40 +104,18 @@ public interface RecipeRepository extends JpaRepository<Recipe, UUID> {
     @EntityGraph(attributePaths = "cuisine")
     List<Recipe> findByIdIn(Collection<UUID> ids);
 
-    @Query("""
-        select r.id as recipeId,
-               sum(case when lower(ri.name) in :include then 1 else 0 end) as used,
-               count(ri) as total
-        from Recipe r
-        join r.ingredients ri
-        where (r.custom = false or r.owner.id = :userId)
-          and (:cuisineId is null or r.cuisine.id = :cuisineId)
-          and (:maxMinutes is null or r.readyInMinutes <= :maxMinutes)
-          and (:difficulty is null or r.difficulty = :difficulty)
-          and not exists (
-              select 1 from RecipeIngredient ex
-              where ex.recipe = r and lower(ex.name) in :excluded)
-        group by r.id, r.title
-        having sum(case when lower(ri.name) in :include then 1 else 0 end) > 0
-        order by sum(case when lower(ri.name) in :include then 1 else 0 end) desc,
-                 (count(ri) - sum(case when lower(ri.name) in :include then 1 else 0 end)) asc,
-                 lower(r.title) asc
-        """)
-    List<RecipeMatchRow> findIngredientMatches(@Param("userId") UUID userId,
-                                               @Param("include") Collection<String> include,
-                                               @Param("excluded") Collection<String> excluded,
-                                               @Param("cuisineId") UUID cuisineId,
-                                               @Param("maxMinutes") Integer maxMinutes,
-                                               @Param("difficulty") Difficulty difficulty,
-                                               Pageable pageable);
+    /** Cặp (externalId, id) của các công thức từ API ngoài đã có trong DB. */
+    interface ExternalIdRow {
+        String getExternalId();
 
-    @Query("""
-        select ri.recipe.id as recipeId, ri.name as name
-        from RecipeIngredient ri
-        where ri.recipe.id in :recipeIds
-          and lower(ri.name) not in :include
-        """)
-    List<MissingRow> findMissingNames(@Param("recipeIds") Collection<UUID> recipeIds,
-                                      @Param("include") Collection<String> include);
+        UUID getId();
+    }
 
+    @Query("select r.externalId as externalId, r.id as id from Recipe r where r.externalId in :externalIds")
+    List<ExternalIdRow> findIdsByExternalIdIn(@Param("externalIds") Collection<String> externalIds);
+
+    /** Khóa dòng để hai request cùng bổ sung chi tiết cho một công thức không ghi đè nhau. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from Recipe r where r.externalId = :externalId")
+    Optional<Recipe> findForUpdateByExternalId(@Param("externalId") String externalId);
 }

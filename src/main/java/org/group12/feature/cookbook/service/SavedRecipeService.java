@@ -70,8 +70,8 @@ public class SavedRecipeService {
             return recipeRepository.findById(req.getRecipeId())
                     .orElseThrow(RecipeNotFoundException::new);
         }
-        return recipeRepository.findByExternalId(req.getExternalId())
-                .orElseGet(() -> importExternal(req.getExternalId()));
+        // luôn đi qua RecipeService: nếu món mới chỉ được lưu từ kết quả tìm kiếm thì nó bổ sung nguyên liệu và các bước
+        return importExternal(req.getExternalId());
     }
 
     @Transactional(readOnly = true)

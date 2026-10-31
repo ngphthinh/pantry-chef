@@ -1,31 +1,22 @@
 package org.group12.feature.recipe.client.model;
 
-import lombok.*;
-
 import java.io.Serializable;
 import java.util.List;
 
-@Builder
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ExternalRecipeDetail implements Serializable {
+public record ExternalRecipeDetail(
+        String externalId,
+        String title,
+        String imageUrl,
+        Integer servings,
+        Integer readyInMinutes,
+        String sourceUrl,
+        String cuisineName,
+        List<ExternalRecipeIngredient> ingredients,
+        List<ExternalRecipeStep> steps
+) implements Serializable {
 
-    private String externalId;
-    private String title;
-    private String imageUrl;
-    private Integer servings;
-    private Integer readyInMinutes;
-    private String sourceUrl;
-    private String cuisineName;
-    private List<ExternalRecipeIngredient> ingredients;
-    private List<ExternalRecipeStep> steps;
-
-    public void setIngredients(List<ExternalRecipeIngredient> ingredients) {
-        this.ingredients = ingredients == null ? List.of() : List.copyOf(ingredients);
-    }
-
-    public void setSteps(List<ExternalRecipeStep> steps) {
-        this.steps = steps == null ? List.of() : List.copyOf(steps);
+    public ExternalRecipeDetail {
+        ingredients = ingredients == null ? List.of() : List.copyOf(ingredients);
+        steps = steps == null ? List.of() : List.copyOf(steps);
     }
 }

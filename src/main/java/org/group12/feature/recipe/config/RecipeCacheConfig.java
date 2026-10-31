@@ -32,7 +32,7 @@ public class RecipeCacheConfig {
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory,
                                      @Value("${app.recipe.cache.ttl-minutes}") long ttlMinutes) {
-        Duration ttl = Duration.ofMinutes(Math.clamp(ttlMinutes, 1, MAX_TTL_MINUTES));
+        Duration ttl = Duration.ofMinutes(Math.min(Math.max(ttlMinutes, 1), MAX_TTL_MINUTES));
 
         RedisCacheConfiguration configuration = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(ttl)

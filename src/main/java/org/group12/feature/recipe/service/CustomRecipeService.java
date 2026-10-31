@@ -70,7 +70,7 @@ public class CustomRecipeService {
     @Transactional(readOnly = true)
     public CursorResponse<RecipeSummaryResponse> getMyRecipes(UUID cursor, int size) {
         UUID userId = appUtil.userIdFromAuthentication();
-        int limit = Math.clamp(size, 1, MAX_PAGE_SIZE);
+        int limit = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(0, limit + 1);
 
         List<Recipe> recipes = cursor == null

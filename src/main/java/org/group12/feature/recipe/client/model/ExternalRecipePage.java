@@ -1,20 +1,12 @@
 package org.group12.feature.recipe.client.model;
 
-import lombok.*;
-
 import java.io.Serializable;
 import java.util.List;
 
-@Builder
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ExternalRecipePage implements Serializable {
+/** Một trang kết quả thô từ nhà cung cấp (chưa lọc), kèm tổng số kết quả để tính {@code hasNext}. */
+public record ExternalRecipePage(List<ExternalRecipeSummary> items, int totalResults) implements Serializable {
 
-    private List<ExternalRecipeSummary> items;
-    private int totalResults;
-
-    public void setItems(List<ExternalRecipeSummary> items) {
-        this.items = items == null ? List.of() : List.copyOf(items);
+    public ExternalRecipePage {
+        items = items == null ? List.of() : List.copyOf(items);
     }
 }

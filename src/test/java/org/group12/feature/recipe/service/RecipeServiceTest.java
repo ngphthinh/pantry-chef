@@ -248,7 +248,8 @@ class RecipeServiceTest {
 
     @Test
     void getByExternalId_returnsLocalCopyWithoutCallingProvider() {
-        RecipeDetailResponse local = RecipeDetailResponse.builder().id(UUID.randomUUID()).externalId("123").build();
+        RecipeDetailResponse local = RecipeDetailResponse.builder().id(UUID.randomUUID()).externalId("123")
+                .ingredients(List.of(RecipeIngredientResponse.builder().name("rice").build())).build();
         when(recipeImportService.findImported("123")).thenReturn(Optional.of(local));
 
         assertEquals(local, recipeService.getByExternalId("123"));
@@ -270,8 +271,9 @@ class RecipeServiceTest {
     void getByExternalId_concurrentImport_readsTheSavedCopy() {
         ExternalRecipeDetail external = new ExternalRecipeDetail("123", "Pho", null, 2, 30, null, null, List.of(), List.of());
         RecipeDetailResponse saved = RecipeDetailResponse.builder().id(UUID.randomUUID()).externalId("123").build();
-        when(recipeImportService.findImported("123")).thenReturn(Optional.empty(), Optional.of(saved));
+        when(recipeImportService.findImported("123")).thenReturn(Optional.empty());
         when(recipeProviderClient.getDetail("123")).thenReturn(external);
+        when(recipeImportService.completeRecipe(external)).thenReturn(saved);
         when(recipeImportService.importRecipe(external)).thenThrow(new DataIntegrityViolationException("duplicate"));
 
         assertEquals(saved, recipeService.getByExternalId("123"));
@@ -314,7 +316,8 @@ class RecipeServiceTest {
 
     @Test
     void scale_recipeWithoutBaseServings_throws() {
-        RecipeDetailResponse detail = RecipeDetailResponse.builder().externalId("123").servings(null).ingredients(List.of()).build();
+        RecipeDetailResponse detail = RecipeDetailResponse.builder().externalId("123").servings(null)
+                .ingredients(List.of(RecipeIngredientResponse.builder().name("rice").build())).build();
         when(recipeImportService.findImported("123")).thenReturn(Optional.of(detail));
 
         assertThrows(InvalidServingsException.class, () -> recipeService.scale("123", 2));
@@ -410,5 +413,75 @@ class RecipeServiceTest {
         ArgumentCaptor<RecipeSearchCriteria> captor = ArgumentCaptor.forClass(RecipeSearchCriteria.class);
         verify(recipeProviderClient).search(captor.capture(), eq(0), eq(20));
         assertEquals(30, captor.getValue().includeIngredients().size());
+    }
+
+    // ---------- tự lưu món từ API ngoài ----------
+
+    @Test
+    void search_savesNewRecipesAndAttachesIds() {
+        authenticate();
+        when(excludedIngredientRepository.findByUserId(userId)).thenReturn(List.of());
+        UUID existingId = UUID.randomUUID();
+        UUID newId = UUID.randomUUID();
+        when(recipeProviderClient.search(any(), eq(0), eq(20))).thenReturn(
+                new ExternalRecipePage(List.of(summary("5", 20, null, null), summary("6", 20, null, null)), 2));
+        when(recipeImportService.findIds(anyCollection())).thenReturn(java.util.Map.of("5", existingId));
+        when(recipeImportService.importSummary(any(ExternalRecipeSummary.class), any())).thenReturn(newId);
+
+        CursorResponse<RecipeSummaryResponse> result = recipeService.searchByName("mì", null, 20);
+
+        assertEquals(existingId, result.getContent().get(0).getId());
+        assertEquals(newId, result.getContent().get(1).getId());
+        ArgumentCaptor<ExternalRecipeSummary> saved = ArgumentCaptor.forClass(ExternalRecipeSummary.class);
+        verify(recipeImportService).importSummary(saved.capture(), any());
+        assertEquals("6", saved.getValue().externalId());
+    }
+
+    @Test
+    void search_saveFailureDoesNotBreakResults() {
+        authenticate();
+        when(excludedIngredientRepository.findByUserId(userId)).thenReturn(List.of());
+        when(recipeProviderClient.search(any(), eq(0), eq(20)))
+                .thenReturn(new ExternalRecipePage(List.of(summary("6", 20, null, null)), 1));
+        when(recipeImportService.importSummary(any(ExternalRecipeSummary.class), any()))
+                .thenThrow(new DataIntegrityViolationException("duplicate"));
+
+        CursorResponse<RecipeSummaryResponse> result = recipeService.searchByName("mì", null, 20);
+
+        assertEquals(1, result.getContent().size());
+        assertNull(result.getContent().get(0).getId());
+    }
+
+    @Test
+    void getByExternalId_recipeSavedFromSearch_isCompletedFromProvider() {
+        RecipeDetailResponse stub = RecipeDetailResponse.builder().id(UUID.randomUUID()).externalId("123")
+                .ingredients(List.of()).steps(List.of()).build();
+        RecipeDetailResponse full = RecipeDetailResponse.builder().id(stub.getId()).externalId("123")
+                .ingredients(List.of(RecipeIngredientResponse.builder().name("rice").build())).build();
+        ExternalRecipeDetail external = new ExternalRecipeDetail("123", "Pho", null, 2, 30, null, null, List.of(), List.of());
+        when(recipeImportService.findImported("123")).thenReturn(Optional.of(stub));
+        when(recipeProviderClient.getDetail("123")).thenReturn(external);
+        when(recipeImportService.completeRecipe(external)).thenReturn(full);
+
+        assertEquals(full, recipeService.getByExternalId("123"));
+        verify(recipeImportService, never()).importRecipe(any());
+    }
+
+    @Test
+    void getByExternalId_recipeSavedFromSearch_providerDown_returnsBasicInfo() {
+        RecipeDetailResponse stub = RecipeDetailResponse.builder().id(UUID.randomUUID()).externalId("123")
+                .ingredients(List.of()).steps(List.of()).build();
+        when(recipeImportService.findImported("123")).thenReturn(Optional.of(stub));
+        when(recipeProviderClient.getDetail("123")).thenThrow(new RecipeProviderException());
+
+        assertEquals(stub, recipeService.getByExternalId("123"));
+    }
+
+    @Test
+    void getByExternalId_notSavedAndProviderDown_throws() {
+        when(recipeImportService.findImported("123")).thenReturn(Optional.empty());
+        when(recipeProviderClient.getDetail("123")).thenThrow(new RecipeProviderException());
+
+        assertThrows(RecipeProviderException.class, () -> recipeService.getByExternalId("123"));
     }
 }
