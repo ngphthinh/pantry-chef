@@ -27,11 +27,18 @@ import org.group12.feature.recipe.exception.RecipeNotFoundException;
 import org.group12.feature.recipe.exception.RecipeProviderException;
 import org.group12.feature.recipe.exception.RecipeProviderQuotaExceededException;
 import org.group12.feature.recipe.mapper.CuisineMapper;
+import org.group12.feature.recipe.mapper.RecipeMapper;
 import org.group12.feature.recipe.repository.CuisineRepository;
+import org.group12.feature.recipe.repository.RecipeRepository;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -78,6 +85,15 @@ public class RecipeService {
     private final PantryItemRepository pantryItemRepository;
     private final ExcludedIngredientRepository excludedIngredientRepository;
     private final AppUtil appUtil;
+    private final RecipeRepository recipeRepository;
+    private final RecipeMapper recipeMapper;
+
+    @Transactional(readOnly = true)
+    public Page<RecipeSummaryResponse> getAllRecipes(int page, int size) {
+        int limit = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), limit, Sort.by(Sort.Direction.DESC, "id"));
+        return recipeRepository.findAll(pageable).map(recipeMapper::toSummaryResponse);
+    }
 
     // ---------- tìm kiếm ----------
 

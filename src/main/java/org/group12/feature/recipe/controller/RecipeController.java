@@ -8,6 +8,7 @@ import org.group12.feature.recipe.dto.response.RecipeSummaryResponse;
 import org.group12.feature.recipe.enums.Difficulty;
 import org.group12.feature.recipe.enums.RecipeResponseCode;
 import org.group12.feature.recipe.service.RecipeService;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,6 +42,18 @@ public class RecipeController {
                 .code(RecipeResponseCode.RECIPES_FETCHED.getCode())
                 .message(RecipeResponseCode.RECIPES_FETCHED.getMessage())
                 .data(recipeService.searchByIngredients(ingredients, cursor, size, cuisineId, maxMinutes, difficulty))
+                .build();
+    }
+
+    // GET /v1/recipes/all?page=0&size=20
+    @GetMapping("/all")
+    public ApiResponse<Page<RecipeSummaryResponse>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ApiResponse.<Page<RecipeSummaryResponse>>builder()
+                .code(RecipeResponseCode.RECIPES_FETCHED.getCode())
+                .message(RecipeResponseCode.RECIPES_FETCHED.getMessage())
+                .data(recipeService.getAllRecipes(page, size))
                 .build();
     }
 
