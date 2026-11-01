@@ -1,7 +1,7 @@
 package org.group12.feature.recipe.client;
 
 import lombok.extern.slf4j.Slf4j;
-import org.group12.common.utils.AppUtil;
+import org.group12.common.enums.Unit;
 import org.group12.feature.recipe.client.SpoonacularPayload.ExtendedIngredient;
 import org.group12.feature.recipe.client.SpoonacularPayload.Information;
 import org.group12.feature.recipe.client.SpoonacularPayload.Instruction;
@@ -31,11 +31,16 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.group12.common.exception.AppException;
 
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * Cài đặt {@link RecipeProviderClient} cho Spoonacular (<a href="https://spoonacular.com/food-api/docs">...</a>).
+ * Cài đặt {@link RecipeProviderClient} cho Spoonacular (https://spoonacular.com/food-api/docs).
  * Khóa API gửi qua header {@code x-api-key}, không nằm trong URL nên không lọt vào log.
  */
 @Slf4j
@@ -51,9 +56,7 @@ public class SpoonacularClient implements RecipeProviderClient {
     private static final String IMAGE_URL_TEMPLATE = "https://img.spoonacular.com/recipes/%s-312x231.%s";
 
     private static final String SORT_MIN_MISSING = "min-missing-ingredients";
-    private static final String SORT_POPULARITY = "popularity";
     private static final String DIRECTION_ASC = "asc";
-    private static final String DIRECTION_DESC = "desc";
 
     private static final int SECONDS_PER_MINUTE = 60;
     private static final int SECONDS_PER_HOUR = 3600;
@@ -70,12 +73,10 @@ public class SpoonacularClient implements RecipeProviderClient {
 
     private final RestClient restClient;
     private final String apiKey;
-    private final AppUtil appUtil;
 
-    public SpoonacularClient(RestClient restClient, @Value("${app.recipe.provider.api-key}") String apiKey, AppUtil appUtil) {
+    public SpoonacularClient(RestClient restClient, @Value("${app.recipe.provider.api-key}") String apiKey) {
         this.restClient = restClient;
         this.apiKey = apiKey;
-        this.appUtil = appUtil;
     }
 
     @Override
@@ -88,26 +89,22 @@ public class SpoonacularClient implements RecipeProviderClient {
             key = "#criteria.toString() + ':' + #offset + ':' + #number")
     public ExternalRecipePage search(RecipeSearchCriteria criteria, int offset, int number) {
         Map<String, Object> query = new LinkedHashMap<>();
-        putIfNotBlank(query, "query", criteria.getQuery());
-        if (!criteria.getIncludeIngredients().isEmpty()) {
-            query.put("includeIngredients", String.join(",", criteria.getIncludeIngredients()));
+        putIfNotBlank(query, "query", criteria.query());
+        if (!criteria.includeIngredients().isEmpty()) {
+            query.put("includeIngredients", String.join(",", criteria.includeIngredients()));
             query.put("fillIngredients", true);
         }
-        if (!criteria.getExcludeIngredients().isEmpty()) {
-            query.put("excludeIngredients", String.join(",", criteria.getExcludeIngredients()));
+        if (!criteria.excludeIngredients().isEmpty()) {
+            query.put("excludeIngredients", String.join(",", criteria.excludeIngredients()));
         }
-        putIfNotBlank(query, "cuisine", criteria.getCuisineName());
-        if (criteria.getMaxReadyMinutes() != null) {
-            query.put("maxReadyTime", criteria.getMaxReadyMinutes());
+        putIfNotBlank(query, "cuisine", criteria.cuisineName());
+        if (criteria.maxReadyMinutes() != null) {
+            query.put("maxReadyTime", criteria.maxReadyMinutes());
         }
-        switch (criteria.getSort()) {
+        switch (criteria.sort()) {
             case MIN_MISSING_INGREDIENTS -> {
                 query.put("sort", SORT_MIN_MISSING);
                 query.put("sortDirection", DIRECTION_ASC);
-            }
-            case POPULARITY -> {
-                query.put("sort", SORT_POPULARITY);
-                query.put("sortDirection", DIRECTION_DESC);
             }
             case RELEVANCE -> {
                 // mặc định của nhà cung cấp
@@ -118,9 +115,9 @@ public class SpoonacularClient implements RecipeProviderClient {
         query.put("number", number);
 
         SearchResponse response = get(SEARCH_PATH, Map.of(), query, SearchResponse.class);
-        List<ExternalRecipeSummary> items = response.getResults() == null ? List.of()
-                : response.getResults().stream().filter(item -> item.getId() != null).map(this::toSummary).toList();
-        int total = response.getTotalResults() == null ? offset + items.size() : response.getTotalResults();
+        List<ExternalRecipeSummary> items = response.results() == null ? List.of()
+                : response.results().stream().filter(item -> item.id() != null).map(this::toSummary).toList();
+        int total = response.totalResults() == null ? offset + items.size() : response.totalResults();
         return new ExternalRecipePage(items, total);
     }
 
@@ -138,7 +135,7 @@ public class SpoonacularClient implements RecipeProviderClient {
         SimilarItem[] items = get(SIMILAR_PATH, Map.of(PATH_VAR_RECIPE_ID, externalId),
                 Map.of("number", number), SimilarItem[].class);
         return java.util.Arrays.stream(items)
-                .filter(item -> item.getId() != null)
+                .filter(item -> item.id() != null)
                 .map(this::toSummary)
                 .toList();
     }
@@ -147,13 +144,13 @@ public class SpoonacularClient implements RecipeProviderClient {
     @Override
     public List<ExternalRecipeSummary> getRandom(int number) {
         RandomResponse response = get(RANDOM_PATH, Map.of(), Map.of("number", number), RandomResponse.class);
-        if (response.getRecipes() == null) {
+        if (response.recipes() == null) {
             return List.of();
         }
-        return response.getRecipes().stream()
-                .filter(info -> info.getId() != null)
-                .map(info -> new ExternalRecipeSummary(String.valueOf(info.getId()), info.getTitle(), info.getImage(),
-                        info.getReadyInMinutes(), info.getServings(), firstOrNull(info.getCuisines()), null, null, List.of()))
+        return response.recipes().stream()
+                .filter(info -> info.id() != null)
+                .map(info -> new ExternalRecipeSummary(String.valueOf(info.id()), info.title(), info.image(),
+                        info.readyInMinutes(), info.servings(), firstOrNull(info.cuisines()), null, null, List.of()))
                 .toList();
     }
 
@@ -207,71 +204,88 @@ public class SpoonacularClient implements RecipeProviderClient {
     // ---------- mapping ----------
 
     private ExternalRecipeSummary toSummary(SearchItem item) {
-        List<String> missed = item.getMissedIngredients() == null ? List.of()
-                : item.getMissedIngredients().stream().map(NamedItem::getName).filter(n -> n != null && !n.isBlank()).toList();
-        return new ExternalRecipeSummary(String.valueOf(item.getId()), item.getTitle(), item.getImage(),
-                item.getReadyInMinutes(), item.getServings(), firstOrNull(item.getCuisines()),
-                item.getUsedIngredientCount(), item.getMissedIngredientCount(), missed);
+        List<String> missed = item.missedIngredients() == null ? List.of()
+                : item.missedIngredients().stream().map(NamedItem::name).filter(n -> n != null && !n.isBlank()).toList();
+        return new ExternalRecipeSummary(String.valueOf(item.id()), item.title(), item.image(),
+                item.readyInMinutes(), item.servings(), firstOrNull(item.cuisines()),
+                item.usedIngredientCount(), item.missedIngredientCount(), missed);
     }
 
     private ExternalRecipeSummary toSummary(SimilarItem item) {
-        String image = item.getImageType() == null ? null
-                : IMAGE_URL_TEMPLATE.formatted(item.getId(), item.getImageType());
-        return new ExternalRecipeSummary(String.valueOf(item.getId()), item.getTitle(), image,
-                item.getReadyInMinutes(), item.getServings(), null, null, null, List.of());
+        String image = item.imageType() == null ? null
+                : IMAGE_URL_TEMPLATE.formatted(item.id(), item.imageType());
+        return new ExternalRecipeSummary(String.valueOf(item.id()), item.title(), image,
+                item.readyInMinutes(), item.servings(), null, null, null, List.of());
     }
 
     private ExternalRecipeDetail toDetail(Information info) {
         List<ExternalRecipeIngredient> ingredients = new ArrayList<>();
-        if (info.getExtendedIngredients() != null) {
-            for (ExtendedIngredient ingredient : info.getExtendedIngredients()) {
+        if (info.extendedIngredients() != null) {
+            for (ExtendedIngredient ingredient : info.extendedIngredients()) {
                 toIngredient(ingredient).ifPresent(ingredients::add);
             }
         }
 
         List<ExternalRecipeStep> steps = new ArrayList<>();
-        if (info.getAnalyzedInstructions() != null) {
-            for (Instruction instruction : info.getAnalyzedInstructions()) {
-                if (instruction.getSteps() == null) {
+        if (info.analyzedInstructions() != null) {
+            for (Instruction instruction : info.analyzedInstructions()) {
+                if (instruction.steps() == null) {
                     continue;
                 }
-                for (InstructionStep step : instruction.getSteps()) {
-                    if (step.getStep() != null && !step.getStep().isBlank()) {
-                        steps.add(new ExternalRecipeStep(steps.size() + 1, step.getStep().trim(), toSeconds(step.getLength())));
+                for (InstructionStep step : instruction.steps()) {
+                    if (step.step() != null && !step.step().isBlank()) {
+                        steps.add(new ExternalRecipeStep(steps.size() + 1, step.step().trim(), toSeconds(step.length())));
                     }
                 }
             }
         }
-        if (steps.isEmpty() && info.getInstructions() != null && !info.getInstructions().isBlank()) {
-            steps.add(new ExternalRecipeStep(1, stripHtml(info.getInstructions()), null));
+        if (steps.isEmpty() && info.instructions() != null && !info.instructions().isBlank()) {
+            steps.add(new ExternalRecipeStep(1, stripHtml(info.instructions()), null));
         }
 
-        return new ExternalRecipeDetail(String.valueOf(info.getId()), info.getTitle(), info.getImage(), info.getServings(),
-                info.getReadyInMinutes(), info.getSourceUrl(), firstOrNull(info.getCuisines()), ingredients, steps);
+        return new ExternalRecipeDetail(String.valueOf(info.id()), info.title(), info.image(), info.servings(),
+                info.readyInMinutes(), info.sourceUrl(), firstOrNull(info.cuisines()), ingredients, steps);
     }
 
-    private Optional<ExternalRecipeIngredient> toIngredient(ExtendedIngredient ingredient) {
-        String name = ingredient.getName() != null && !ingredient.getName().isBlank() ? ingredient.getName() : ingredient.getOriginal();
+    private java.util.Optional<ExternalRecipeIngredient> toIngredient(ExtendedIngredient ingredient) {
+        String name = ingredient.name() != null && !ingredient.name().isBlank() ? ingredient.name() : ingredient.original();
         if (name == null || name.isBlank()) {
             return java.util.Optional.empty();
         }
-        Measure metric = ingredient.getMeasures() == null ? null : ingredient.getMeasures().getMetric();
-        if (metric != null && metric.getAmount() != null) {
-            return java.util.Optional.of(new ExternalRecipeIngredient(name.trim(), metric.getAmount(), appUtil.toUnit(metric.getUnitShort())));
+        Measure metric = ingredient.measures() == null ? null : ingredient.measures().metric();
+        if (metric != null && metric.amount() != null) {
+            return java.util.Optional.of(new ExternalRecipeIngredient(name.trim(), metric.amount(), toUnit(metric.unitShort())));
         }
-        return Optional.of(new ExternalRecipeIngredient(name.trim(), ingredient.getAmount(), appUtil.toUnit(ingredient.getUnit())));
+        return java.util.Optional.of(new ExternalRecipeIngredient(name.trim(), ingredient.amount(), toUnit(ingredient.unit())));
     }
 
-
+    /** Đơn vị không có trong {@link Unit} (clove, slice, large, ...) được xem là đếm theo cái (PCS). */
+    static Unit toUnit(String unit) {
+        if (unit == null) {
+            return Unit.PCS;
+        }
+        return switch (unit.trim().toLowerCase(Locale.ROOT)) {
+            case "mg", "milligram", "milligrams" -> Unit.MG;
+            case "g", "gram", "grams" -> Unit.G;
+            case "kg", "kilogram", "kilograms" -> Unit.KG;
+            case "ml", "milliliter", "milliliters", "millilitre", "millilitres" -> Unit.ML;
+            case "l", "liter", "liters", "litre", "litres" -> Unit.L;
+            case "tbsp", "tbsps", "tablespoon", "tablespoons" -> Unit.TBSP;
+            case "tsp", "tsps", "teaspoon", "teaspoons" -> Unit.TSP;
+            case "cup", "cups" -> Unit.CUP;
+            case "pinch", "pinches" -> Unit.PINCH;
+            default -> Unit.PCS;
+        };
+    }
 
     private Integer toSeconds(StepLength length) {
-        if (length == null || length.getNumber() == null || length.getUnit() == null) {
+        if (length == null || length.number() == null || length.unit() == null) {
             return null;
         }
-        return switch (length.getUnit().trim().toLowerCase(Locale.ROOT)) {
-            case "seconds", "second" -> length.getNumber();
-            case "minutes", "minute" -> length.getNumber() * SECONDS_PER_MINUTE;
-            case "hours", "hour" -> length.getNumber() * SECONDS_PER_HOUR;
+        return switch (length.unit().trim().toLowerCase(Locale.ROOT)) {
+            case "seconds", "second" -> length.number();
+            case "minutes", "minute" -> length.number() * SECONDS_PER_MINUTE;
+            case "hours", "hour" -> length.number() * SECONDS_PER_HOUR;
             default -> null;
         };
     }
@@ -281,7 +295,7 @@ public class SpoonacularClient implements RecipeProviderClient {
     }
 
     private static String firstOrNull(List<String> values) {
-        return values == null || values.isEmpty() ? null : values.getFirst();
+        return values == null || values.isEmpty() ? null : values.get(0);
     }
 
     private static void putIfNotBlank(Map<String, Object> map, String key, String value) {

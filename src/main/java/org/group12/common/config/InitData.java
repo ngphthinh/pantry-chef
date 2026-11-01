@@ -353,19 +353,19 @@ public class InitData implements CommandLineRunner {
         List<Cuisine> cuisines = cuisineRepository.findAll();
         List<Ingredient> pool = ingredientRepository.findAll();
         List<User> owners = userRepository.findAll(PageRequest.of(0, 5)).getContent();
-        if (cuisines.isEmpty() || pool.isEmpty()) {
-            log.warn("Skip seeding recipes: cuisines or ingredients missing");
+
+        if (cuisines.isEmpty() || pool.isEmpty() || owners.isEmpty()) {
+            log.warn("Skip seeding recipes: cuisines, ingredients or users missing");
             return;
         }
 
-        Faker faker = new Faker(new Random(42)); // seed cố định → dữ liệu lặp lại được
+        Faker faker = new Faker(new Random(42));
         Difficulty[] difficulties = Difficulty.values();
         int total = 60;
-        int customCount = owners.isEmpty() ? 0 : 10;
 
         List<Recipe> recipes = new ArrayList<>();
+
         for (int i = 0; i < total; i++) {
-            boolean custom = i < customCount;
             String title = DISHES.get(i % DISHES.size())
                     + (i >= DISHES.size() ? " #" + (i / DISHES.size() + 1) : "");
 
@@ -376,21 +376,18 @@ public class InitData implements CommandLineRunner {
                     .servings(faker.number().numberBetween(1, 8))
                     .readyInMinutes(faker.number().numberBetween(10, 120))
                     .difficulty(difficulties[faker.number().numberBetween(0, difficulties.length)])
-                    .custom(custom)
+                    .custom(true)
                     .cuisine(cuisines.get(faker.number().numberBetween(0, cuisines.size())))
+                    .owner(owners.get(i % owners.size()))
                     .build();
-
-            if (custom) {
-                recipe.setOwner(owners.get(i % owners.size()));
-            } else {
-//                recipe.setExternalId("seed-" + (100000 + i));
-//                recipe.setSourceUrl("https://example.com/recipes/seed-" + (100000 + i));
-            }
 
             List<Ingredient> shuffled = new ArrayList<>(pool);
             Collections.shuffle(shuffled, new Random(i));
+
             int ingredientCount = faker.number().numberBetween(4, 9);
-            for (Ingredient ing : shuffled.subList(0, Math.min(ingredientCount, shuffled.size()))) {
+
+            for (Ingredient ing : shuffled.subList(
+                    0, Math.min(ingredientCount, shuffled.size()))) {
                 recipe.getIngredients().add(RecipeIngredient.builder()
                         .id(appUtil.generateUUID())
                         .recipe(recipe)
@@ -401,13 +398,14 @@ public class InitData implements CommandLineRunner {
             }
 
             int stepCount = faker.number().numberBetween(3, STEPS.size() + 1);
+
             for (int s = 0; s < stepCount; s++) {
                 recipe.getSteps().add(RecipeStep.builder()
                         .id(appUtil.generateUUID())
                         .recipe(recipe)
                         .stepOrder(s + 1)
                         .text(STEPS.get(s))
-                        .timerSeconds(STEP_TIMERS.get(s))   // null nếu bước không cần hẹn giờ
+                        .timerSeconds(STEP_TIMERS.get(s))
                         .build());
             }
 
@@ -415,9 +413,8 @@ public class InitData implements CommandLineRunner {
         }
 
         recipeRepository.saveAll(recipes);
-        log.info("Seeded {} recipes ({} custom)", recipes.size(), customCount);
+        log.info("Seeded {} custom recipes", recipes.size());
     }
-
     // cùng thứ tự với STEPS: bước 2 ướp 15 phút, bước 5 hầm 20 phút
     private static final List<Integer> STEP_TIMERS = Arrays.asList(
             null, 900, null, null, 1200, null, null);

@@ -27,19 +27,29 @@ import org.group12.feature.recipe.exception.RecipeNotFoundException;
 import org.group12.feature.recipe.exception.RecipeProviderException;
 import org.group12.feature.recipe.exception.RecipeProviderQuotaExceededException;
 import org.group12.feature.recipe.mapper.CuisineMapper;
+import org.group12.feature.recipe.mapper.RecipeMapper;
 import org.group12.feature.recipe.repository.CuisineRepository;
+import org.group12.feature.recipe.repository.RecipeRepository;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -75,13 +85,22 @@ public class RecipeService {
     private final PantryItemRepository pantryItemRepository;
     private final ExcludedIngredientRepository excludedIngredientRepository;
     private final AppUtil appUtil;
+    private final RecipeRepository recipeRepository;
+    private final RecipeMapper recipeMapper;
+
+    @Transactional(readOnly = true)
+    public Page<RecipeSummaryResponse> getAllRecipes(int page, int size) {
+        int limit = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), limit, Sort.by(Sort.Direction.DESC, "id"));
+        return recipeRepository.findAll(pageable).map(recipeMapper::toSummaryResponse);
+    }
 
     // ---------- tìm kiếm ----------
 
     public CursorResponse<RecipeSummaryResponse> searchByIngredients(
             List<String> ingredients, String cursor, int size, UUID cuisineId, Integer maxMinutes, Difficulty difficulty) {
         UUID userId = appUtil.userIdFromAuthentication();
-        List<String> include = normalizeNames(ingredients).stream().limit(MAX_SEARCH_INGREDIENTS).toList();
+        List<String> include = normalizeNames(ingredients);
         if (include.isEmpty() || (maxMinutes != null && maxMinutes <= 0)) {
             throw new InvalidRecipeSearchException();
         }
@@ -142,16 +161,8 @@ public class RecipeService {
         return withLocal(local, () -> searchPage(criteria, cursor, size, null));
     }
 
-    public CursorResponse<RecipeSummaryResponse> getPopular(String cursor, int size) {
-        UUID userId = appUtil.userIdFromAuthentication();
-
-        RecipeSearchCriteria criteria = new RecipeSearchCriteria(
-                List.of(), excludedNames(userId), null, null, null, RecipeSort.POPULARITY);
-        return searchPage(criteria, cursor, size, null);
-    }
-
     public List<RecipeSummaryResponse> getRandom(int count) {
-        int limit = Math.clamp(count, 1, MAX_RANDOM_COUNT);
+        int limit = Math.min(Math.max(count, 1), MAX_RANDOM_COUNT);
         return toSummaries(recipeProviderClient.getRandom(limit));
     }
 
@@ -167,8 +178,38 @@ public class RecipeService {
      */
     public RecipeDetailResponse getByExternalId(String externalId) {
         requireValidExternalId(externalId);
-        return recipeImportService.findImported(externalId)
-                .orElseGet(() -> importFromProvider(externalId));
+        Optional<RecipeDetailResponse> local = recipeImportService.findImported(externalId);
+        if (local.isPresent() && hasContent(local.get())) {
+            return local.get();
+        }
+
+        // Chưa có, hoặc mới lưu từ kết quả tìm kiếm (chưa có nguyên liệu và các bước): lấy chi tiết từ API ngoài
+        ExternalRecipeDetail external;
+        try {
+            external = recipeProviderClient.getDetail(externalId);
+        } catch (RecipeProviderException | RecipeProviderQuotaExceededException ex) {
+            if (local.isPresent()) {
+                log.warn("Recipe provider unavailable, returning basic info for {}: {}", externalId, ex.getMessage());
+                return local.get();
+            }
+            throw ex;
+        }
+
+        if (local.isPresent()) {
+            return recipeImportService.completeRecipe(external);
+        }
+        try {
+            return recipeImportService.importRecipe(external);
+        } catch (DataIntegrityViolationException ex) {
+            // request khác (hoặc lần tìm kiếm) vừa lưu cùng công thức: bổ sung chi tiết vào bản đã lưu
+            log.info("External recipe {} was saved concurrently", externalId);
+            return recipeImportService.completeRecipe(external);
+        }
+    }
+
+    private boolean hasContent(RecipeDetailResponse detail) {
+        return (detail.getIngredients() != null && !detail.getIngredients().isEmpty())
+                || (detail.getSteps() != null && !detail.getSteps().isEmpty());
     }
 
     public RecipeDetailResponse scale(String externalId, int servings) {
@@ -192,17 +233,6 @@ public class RecipeService {
     }
 
     // ---------- private helpers ----------
-
-    private RecipeDetailResponse importFromProvider(String externalId) {
-        ExternalRecipeDetail external = recipeProviderClient.getDetail(externalId);
-        try {
-            return recipeImportService.importRecipe(external);
-        } catch (DataIntegrityViolationException ex) {
-            // request khác vừa lưu cùng công thức: đọc lại bản đã lưu
-            log.info("External recipe {} was imported concurrently", externalId);
-            return recipeImportService.findImported(externalId).orElseThrow(RecipeNotFoundException::new);
-        }
-    }
 
     /**
      * Ghép kết quả trong DB (chỉ có ở trang đầu) lên trước kết quả từ API ngoài, bỏ món ngoài đã có sẵn trong DB.
@@ -244,15 +274,15 @@ public class RecipeService {
     private CursorResponse<RecipeSummaryResponse> searchPage(
             RecipeSearchCriteria criteria, String cursor, int size, Difficulty difficultyFilter) {
         int offset = parseOffset(cursor);
-        int limit = Math.clamp(size, 1, MAX_PAGE_SIZE);
+        int limit = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
 
         ExternalRecipePage page = recipeProviderClient.search(criteria, offset, limit);
 
-        int nextOffset = offset + page.getItems().size();
-        boolean hasNext = nextOffset < page.getTotalResults() && nextOffset <= MAX_OFFSET;
+        int nextOffset = offset + page.items().size();
+        boolean hasNext = nextOffset < page.totalResults() && nextOffset <= MAX_OFFSET;
 
         // Độ khó chỉ suy ra được sau khi nhận kết quả nên lọc ở đây: một trang có thể ít hơn size nhưng vẫn có trang kế
-        List<RecipeSummaryResponse> content = toSummaries(page.getItems()).stream()
+        List<RecipeSummaryResponse> content = toSummaries(page.items()).stream()
                 .filter(summary -> difficultyFilter == null || summary.getDifficulty() == difficultyFilter)
                 .toList();
 
@@ -266,30 +296,68 @@ public class RecipeService {
     private List<RecipeSummaryResponse> toSummaries(List<ExternalRecipeSummary> items) {
         Map<String, Cuisine> cuisinesByName = cuisineRepository.findAllByOrderByNameAsc().stream()
                 .collect(Collectors.toMap(c -> c.getName().toLowerCase(Locale.ROOT), Function.identity(), (a, b) -> a));
-        return items.stream().map(item -> toSummary(item, cuisinesByName)).toList();
+        Map<String, UUID> savedIds = saveSummaries(items, cuisinesByName);
+        return items.stream().map(item -> {
+            RecipeSummaryResponse summary = toSummary(item, cuisinesByName);
+            summary.setId(savedIds.get(item.externalId()));
+            return summary;
+        }).toList();
+    }
+
+    /**
+     * Lưu các món vừa lấy từ API ngoài xuống DB (custom = false) nếu chưa có, trả về id theo externalId.
+     * Chỉ là bước phụ: lỗi DB được ghi log và bỏ qua, kết quả tìm kiếm vẫn trả bình thường.
+     */
+    private Map<String, UUID> saveSummaries(List<ExternalRecipeSummary> items, Map<String, Cuisine> cuisinesByName) {
+        Map<String, UUID> ids = new HashMap<>();
+        List<String> externalIds = items.stream().map(ExternalRecipeSummary::externalId).filter(Objects::nonNull).toList();
+        if (externalIds.isEmpty()) {
+            return ids;
+        }
+        try {
+            ids.putAll(recipeImportService.findIds(externalIds));
+        } catch (DataAccessException ex) {
+            log.warn("Could not look up saved recipes: {}", ex.getMessage());
+            return ids;
+        }
+
+        for (ExternalRecipeSummary item : items) {
+            if (item.externalId() == null || item.title() == null || item.title().isBlank()
+                    || ids.containsKey(item.externalId())) {
+                continue;
+            }
+            Cuisine cuisine = item.cuisineName() == null ? null
+                    : cuisinesByName.get(item.cuisineName().toLowerCase(Locale.ROOT));
+            try {
+                ids.put(item.externalId(), recipeImportService.importSummary(item, cuisine));
+            } catch (DataAccessException ex) {
+                log.warn("Could not save recipe {}: {}", item.externalId(), ex.getMessage());
+            }
+        }
+        return ids;
     }
 
     private RecipeSummaryResponse toSummary(ExternalRecipeSummary item, Map<String, Cuisine> cuisinesByName) {
-        Integer used = item.getUsedIngredientCount();
-        Integer missed = item.getMissedIngredientCount();
+        Integer used = item.usedIngredientCount();
+        Integer missed = item.missedIngredientCount();
         Double matchScore = (used == null || missed == null || used + missed == 0)
                 ? null : (double) used / (used + missed);
-        Cuisine cuisine = item.getCuisineName() == null ? null
-                : cuisinesByName.get(item.getCuisineName().toLowerCase(Locale.ROOT));
+        Cuisine cuisine = item.cuisineName() == null ? null
+                : cuisinesByName.get(item.cuisineName().toLowerCase(Locale.ROOT));
 
         return RecipeSummaryResponse.builder()
-                .externalId(item.getExternalId())
-                .title(item.getTitle())
-                .imageUrl(item.getImageUrl())
-                .servings(item.getServings())
-                .readyInMinutes(item.getReadyInMinutes())
-                .difficulty(Difficulty.fromReadyInMinutes(item.getReadyInMinutes()))
+                .externalId(item.externalId())
+                .title(item.title())
+                .imageUrl(item.imageUrl())
+                .servings(item.servings())
+                .readyInMinutes(item.readyInMinutes())
+                .difficulty(Difficulty.fromReadyInMinutes(item.readyInMinutes()))
                 .custom(false)
                 .cuisine(cuisine == null ? null : cuisineMapper.toCuisineResponse(cuisine))
                 .usedIngredientCount(used)
                 .missedIngredientCount(missed)
                 .matchScore(matchScore)
-                .missingIngredients(item.getMissedIngredients())
+                .missingIngredients(item.missedIngredients())
                 .build();
     }
 
