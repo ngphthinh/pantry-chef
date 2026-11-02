@@ -44,12 +44,13 @@ public class SavedRecipeController {
             @RequestParam(required = false) Boolean favorite,
             @RequestParam(required = false) UUID collectionId,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) @Min(1) @Max(5) Integer minRating)
+            @RequestParam(required = false) @Min(1) @Max(5) Integer minRating,
+            @RequestParam(required = false) String sort)
     {
         return ApiResponse.<CursorResponse<SavedRecipeResponse>>builder()
                 .code(CookbookResponseCode.SAVED_RECIPE_LIST_SUCCESS.getCode())
                 .message(CookbookResponseCode.SAVED_RECIPE_LIST_SUCCESS.getMessage())
-                .data(service.list(cursor, size, favorite, collectionId, keyword, minRating))
+                .data(service.list(cursor, size, favorite, collectionId, keyword, minRating, sort))
                 .build();
     }
 

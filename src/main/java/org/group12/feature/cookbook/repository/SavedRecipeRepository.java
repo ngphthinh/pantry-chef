@@ -39,6 +39,32 @@ public interface SavedRecipeRepository extends JpaRepository<SavedRecipe, UUID> 
     @Query("""
     select s from SavedRecipe s
     join fetch s.recipe r
+    where s.user.id = :userId
+      and (:favorite is null or s.favorite = :favorite)
+      and (:minRating is null or s.rating >= :minRating)
+      and lower(r.title) like :pattern escape '\\'
+      and (:collectionId is null or exists (
+            select 1 from Collection c join c.savedRecipes sr
+            where c.id = :collectionId
+              and c.user.id = :userId
+              and sr.id = s.id))
+      and (:cursor is null
+           or coalesce(s.rating, 0) < (select coalesce(cur.rating, 0) from SavedRecipe cur where cur.id = :cursor)
+           or (coalesce(s.rating, 0) = (select coalesce(cur.rating, 0) from SavedRecipe cur where cur.id = :cursor)
+               and s.id > :cursor))
+    order by coalesce(s.rating, 0) desc, s.id asc
+    """)
+    List<SavedRecipe> findPageByRating(@Param("userId") UUID userId,
+                                       @Param("cursor") UUID cursor,
+                                       @Param("favorite") Boolean favorite,
+                                       @Param("collectionId") UUID collectionId,
+                                       @Param("minRating") Integer minRating,
+                                       @Param("pattern") String pattern,
+                                       Pageable pageable);
+
+    @Query("""
+    select s from SavedRecipe s
+    join fetch s.recipe r
     left join fetch r.cuisine
     where s.id = :id and s.user.id = :userId
     """)
