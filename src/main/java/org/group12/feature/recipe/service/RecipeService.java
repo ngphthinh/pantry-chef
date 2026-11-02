@@ -67,6 +67,29 @@ import java.util.stream.Collectors;
 @PreAuthorize("hasRole('USER')")
 public class RecipeService {
 
+    /** Spoonacular chỉ hiểu tiếng Anh. Khoá phải viết thường, giống normalizeName. */
+    private static final Map<String, String> VI_TO_EN = Map.ofEntries(
+            Map.entry("cà chua", "tomato"),
+            Map.entry("hành tây", "onion"),
+            Map.entry("cà rốt", "carrot"),
+            Map.entry("khoai tây", "potato"),
+            Map.entry("rau muống", "water spinach"),
+            Map.entry("cải thảo", "napa cabbage"),
+            Map.entry("bông cải xanh", "broccoli"),
+            Map.entry("bánh phở", "rice noodles"),
+            Map.entry("dầu ăn", "vegetable oil"),
+            Map.entry("gừng", "ginger"),
+            Map.entry("mỡ heo", "lard"),
+            Map.entry("sả", "lemongrass"),
+            Map.entry("sữa chua", "yogurt"),
+            Map.entry("thịt bò", "beef"),
+            Map.entry("thịt heo xay", "ground pork"),
+            Map.entry("ớt", "chili pepper"),
+            Map.entry("sữa tươi", "milk"),
+            Map.entry("tôm", "shrimp"),
+            Map.entry("đậu phộng", "peanut")
+    );
+
     private static final int MAX_PAGE_SIZE = 50;
     /** Spoonacular không nhận offset lớn hơn mức này. */
     private static final int MAX_OFFSET = 900;
@@ -133,17 +156,34 @@ public class RecipeService {
         UUID userId = appUtil.userIdFromAuthentication();
         List<String> excluded = excludedNames(userId);
         List<String> include = pantryIngredientNames(userId, excluded);
+        log.info("SUGGESTIONS userId={} include={} excluded={}", userId, include, excluded);
         if (include.isEmpty()) {
             return emptyPage();
         }
+
+        // Chỉ gửi sang Spoonacular những nguyên liệu dịch được sang tiếng Anh
+        List<String> includeEn = include.stream().map(VI_TO_EN::get).filter(Objects::nonNull).distinct().toList();
+        List<String> excludedEn = excluded.stream().map(n -> VI_TO_EN.getOrDefault(n, n)).toList();
+        log.info("SUGGESTIONS includeEn={}", includeEn);
 
         List<RecipeSummaryResponse> local = parseOffset(cursor) == 0
                 ? localRecipeSearchService.searchByIngredients(userId, include, excluded, null, null, null)
                 : List.of();
 
-        RecipeSearchCriteria criteria = new RecipeSearchCriteria(
-                include, excluded, null, null, null, RecipeSort.MIN_MISSING_INGREDIENTS);
-        return withLocal(local, () -> searchPage(criteria, cursor, size, null));
+        return withLocal(local, () -> {
+            if (includeEn.isEmpty()) {
+                return emptyPage();
+            }
+            int limit = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+            List<RecipeSummaryResponse> items = toSummaries(recipeProviderClient.findByIngredients(includeEn, limit))
+                    .stream()
+                    .filter(s -> s.getMissingIngredients() == null || s.getMissingIngredients().stream()
+                            .map(this::normalizeName)
+                            .noneMatch(n -> excludedEn.stream().anyMatch(n::contains)))
+                    .toList();
+            return CursorResponse.<RecipeSummaryResponse>builder()
+                    .content(items).hasNext(false).nextCursor(null).build();
+        });
     }
 
     public CursorResponse<RecipeSummaryResponse> searchByName(String keyword, String cursor, int size) {

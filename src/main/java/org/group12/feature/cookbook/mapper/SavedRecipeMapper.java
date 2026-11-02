@@ -10,6 +10,7 @@ import org.mapstruct.*;
 public interface SavedRecipeMapper {
     @Mapping(target = "recipeId", source = "recipe.id")
     @Mapping(target = "recipeTitle", source = "recipe.title")
+    @Mapping(target = "recipeImageUrl", source = "recipe.imageUrl")
     SavedRecipeResponse toSavedRecipeResponse(SavedRecipe savedRecipe);
     SavedRecipeDetailResponse toSavedRecipeDetailResponse(SavedRecipe savedRecipe);
 

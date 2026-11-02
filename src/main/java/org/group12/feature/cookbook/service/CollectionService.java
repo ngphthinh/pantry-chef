@@ -6,6 +6,7 @@ import org.group12.feature.auth.repository.UserRepository;
 import org.group12.feature.cookbook.dto.request.CollectionCreateRequest;
 import org.group12.feature.cookbook.dto.request.CollectionUpdateRequest;
 import org.group12.feature.cookbook.dto.response.CollectionResponse;
+import org.group12.feature.cookbook.dto.response.CollectionResponseDetail;
 import org.group12.feature.cookbook.entity.Collection;
 import org.group12.feature.cookbook.entity.SavedRecipe;
 import org.group12.feature.cookbook.exception.CollectionNameDuplicateException;
@@ -110,4 +111,11 @@ public class CollectionService {
     }
 
 
+    @Transactional(readOnly = true)
+    public CollectionResponseDetail get(UUID id) {
+        UUID userId = appUtil.userIdFromAuthentication();
+        Collection collection = collectionRepository.findCollectionByIdAndUserId(id, userId).orElseThrow(CollectionNotFoundException::new);
+        return collectionMapper.toCollectionResponseDetail(collection, (int) collectionRepository.countRecipes(id));
+
+    }
 }
