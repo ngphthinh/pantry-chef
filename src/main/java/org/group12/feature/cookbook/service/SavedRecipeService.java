@@ -65,11 +65,15 @@ public class SavedRecipeService {
 
     @Transactional(readOnly = true)
     public CursorResponse<SavedRecipeResponse> list(UUID cursor, int size, Boolean favorite,
-                                                    UUID collectionId, String keyword, Integer minRating) {
+                                                    UUID collectionId, String keyword,
+                                                    Integer minRating, String sort) {
         UUID userId = appUtil.userIdFromAuthentication();
-        List<SavedRecipe> rows = savedRecipeRepository.findPage(
-                userId, cursor, favorite, collectionId, minRating,
-                toLikePattern(keyword), PageRequest.of(0, size + 1));
+        String pattern = toLikePattern(keyword);
+        PageRequest page = PageRequest.of(0, size + 1);
+
+        List<SavedRecipe> rows = "rating_desc".equals(sort)
+                ? savedRecipeRepository.findPageByRating(userId, cursor, favorite, collectionId, minRating, pattern, page)
+                : savedRecipeRepository.findPage(userId, cursor, favorite, collectionId, minRating, pattern, page);
 
         return appUtil.buildCursorResponse(rows, size, SavedRecipe::getId, mapper::toSavedRecipeResponse);
     }
