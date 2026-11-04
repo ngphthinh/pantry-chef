@@ -3,6 +3,7 @@ package org.group12.feature.recipe.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.group12.common.utils.AppUtil;
+import org.group12.feature.auth.repository.UserRepository;
 import org.group12.feature.recipe.client.model.ExternalRecipeDetail;
 import org.group12.feature.recipe.client.model.ExternalRecipeSummary;
 import org.group12.feature.recipe.dto.response.RecipeDetailResponse;
@@ -40,6 +41,7 @@ public class RecipeImportService {
     private final CuisineRepository cuisineRepository;
     private final RecipeMapper recipeMapper;
     private final AppUtil appUtil;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public Optional<RecipeDetailResponse> findImported(String externalId) {
@@ -51,18 +53,21 @@ public class RecipeImportService {
      *                                                                 {@code externalId} (ràng buộc unique)
      */
     @Transactional
-    public RecipeDetailResponse importRecipe(ExternalRecipeDetail detail) {
+    public RecipeDetailResponse importRecipe(ExternalRecipeDetail detail, UUID userId) {
         Recipe recipe = Recipe.builder()
                 .id(appUtil.generateUUID())
-                .externalId(detail.externalId())
-                .title(detail.title())
-                .imageUrl(detail.imageUrl())
-                .servings(detail.servings())
-                .readyInMinutes(detail.readyInMinutes())
-                .difficulty(Difficulty.fromReadyInMinutes(detail.readyInMinutes()))
-                .sourceUrl(detail.sourceUrl())
+                .externalId(detail.getExternalId())
+                .title(detail.getTitle())
+                .imageUrl(detail.getImageUrl())
+                .servings(detail.getServings())
+                .readyInMinutes(detail.getReadyInMinutes())
+                .difficulty(Difficulty.fromReadyInMinutes(detail.getReadyInMinutes()))
+                .sourceUrl(detail.getSourceUrl())
                 .custom(false)
-                .cuisine(findCuisine(detail.cuisineName()))
+//                .owner(userRepository.findById(appUtil.userIdFromAuthentication()).orElse(null))
+                .owner(userRepository.getReferenceById(userId))
+
+                .cuisine(findCuisine(detail.getCuisineName()))
                 .build();
 
         addIngredientsAndSteps(recipe, detail);
@@ -85,17 +90,19 @@ public class RecipeImportService {
      * {@link #completeRecipe} khi người dùng mở chi tiết công thức.
      */
     @Transactional
-    public UUID importSummary(ExternalRecipeSummary summary, Cuisine cuisine) {
-        String title = summary.title().trim();
+    public UUID importSummary(ExternalRecipeSummary summary, Cuisine cuisine, UUID userId) {
+        String title = summary.getTitle().trim();
         Recipe recipe = Recipe.builder()
                 .id(appUtil.generateUUID())
-                .externalId(summary.externalId())
+                .externalId(summary.getExternalId())
                 .title(title.length() > MAX_TITLE_LENGTH ? title.substring(0, MAX_TITLE_LENGTH) : title)
-                .imageUrl(summary.imageUrl())
-                .servings(summary.servings())
-                .readyInMinutes(summary.readyInMinutes())
-                .difficulty(Difficulty.fromReadyInMinutes(summary.readyInMinutes()))
+                .imageUrl(summary.getImageUrl())
+                .servings(summary.getServings())
+                .readyInMinutes(summary.getReadyInMinutes())
+                .difficulty(Difficulty.fromReadyInMinutes(summary.getReadyInMinutes()))
                 .custom(false)
+//                .owner(userRepository.findById(appUtil.userIdFromAuthentication()).orElse(null))
+                .owner(userRepository.getReferenceById(userId))
                 .cuisine(cuisine)
                 .build();
         return recipeRepository.saveAndFlush(recipe).getId();
@@ -106,23 +113,23 @@ public class RecipeImportService {
      */
     @Transactional
     public RecipeDetailResponse completeRecipe(ExternalRecipeDetail detail) {
-        Recipe recipe = recipeRepository.findForUpdateByExternalId(detail.externalId())
+        Recipe recipe = recipeRepository.findForUpdateByExternalId(detail.getExternalId())
                 .orElseThrow(RecipeNotFoundException::new);
 
         if (recipe.getIngredients().isEmpty() && recipe.getSteps().isEmpty()) {
-            recipe.setSourceUrl(detail.sourceUrl());
+            recipe.setSourceUrl(detail.getSourceUrl());
             if (recipe.getImageUrl() == null) {
-                recipe.setImageUrl(detail.imageUrl());
+                recipe.setImageUrl(detail.getImageUrl());
             }
             if (recipe.getServings() == null) {
-                recipe.setServings(detail.servings());
+                recipe.setServings(detail.getServings());
             }
             if (recipe.getReadyInMinutes() == null) {
-                recipe.setReadyInMinutes(detail.readyInMinutes());
-                recipe.setDifficulty(Difficulty.fromReadyInMinutes(detail.readyInMinutes()));
+                recipe.setReadyInMinutes(detail.getReadyInMinutes());
+                recipe.setDifficulty(Difficulty.fromReadyInMinutes(detail.getReadyInMinutes()));
             }
             if (recipe.getCuisine() == null) {
-                recipe.setCuisine(findCuisine(detail.cuisineName()));
+                recipe.setCuisine(findCuisine(detail.getCuisineName()));
             }
             addIngredientsAndSteps(recipe, detail);
             recipeRepository.saveAndFlush(recipe);
@@ -131,19 +138,19 @@ public class RecipeImportService {
     }
 
     private void addIngredientsAndSteps(Recipe recipe, ExternalRecipeDetail detail) {
-        detail.ingredients().forEach(ingredient -> recipe.getIngredients().add(RecipeIngredient.builder()
+        detail.getIngredients().forEach(ingredient -> recipe.getIngredients().add(RecipeIngredient.builder()
                 .id(appUtil.generateUUID())
                 .recipe(recipe)
-                .name(ingredient.name())
-                .amount(ingredient.amount())
-                .unit(ingredient.unit())
+                .name(ingredient.getName())
+                .amount(ingredient.getAmount())
+                .unit(ingredient.getUnit())
                 .build()));
-        detail.steps().forEach(step -> recipe.getSteps().add(RecipeStep.builder()
+        detail.getSteps().forEach(step -> recipe.getSteps().add(RecipeStep.builder()
                 .id(appUtil.generateUUID())
                 .recipe(recipe)
-                .stepOrder(step.order())
-                .text(step.text())
-                .timerSeconds(step.timerSeconds())
+                .stepOrder(step.getOrder())
+                .text(step.getText())
+                .timerSeconds(step.getTimerSeconds())
                 .build()));
     }
 
