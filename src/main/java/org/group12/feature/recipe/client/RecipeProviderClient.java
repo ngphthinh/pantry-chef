@@ -26,4 +26,6 @@ public interface RecipeProviderClient {
     List<ExternalRecipeSummary> getSimilar(String externalId, int number);
 
     List<ExternalRecipeSummary> getRandom(int number);
+
+    List<ExternalRecipeSummary> findByIngredients(List<String> ingredients, int number);
 }

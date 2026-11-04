@@ -31,13 +31,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.group12.common.exception.AppException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Cài đặt {@link RecipeProviderClient} cho Spoonacular (https://spoonacular.com/food-api/docs).
@@ -54,6 +48,7 @@ public class SpoonacularClient implements RecipeProviderClient {
     private static final String RANDOM_PATH = "/recipes/random";
     private static final String PATH_VAR_RECIPE_ID = "recipeId";
     private static final String IMAGE_URL_TEMPLATE = "https://img.spoonacular.com/recipes/%s-312x231.%s";
+    private static final String BY_INGREDIENTS_PATH = "/recipes/findByIngredients";
 
     private static final String SORT_MIN_MISSING = "min-missing-ingredients";
     private static final String DIRECTION_ASC = "asc";
@@ -119,6 +114,23 @@ public class SpoonacularClient implements RecipeProviderClient {
                 : response.getResults().stream().filter(item -> item.getId() != null).map(this::toSummary).toList();
         int total = response.getTotalResults() == null ? offset + items.size() : response.getTotalResults();
         return new ExternalRecipePage(items, total);
+    }
+
+    @Override
+    @Cacheable(cacheNames = RecipeCacheConfig.SEARCH_CACHE,
+            key = "'byIng:' + #ingredients.toString() + ':' + #number")
+    public List<ExternalRecipeSummary> findByIngredients(List<String> ingredients, int number) {
+        Map<String, Object> query = new LinkedHashMap<>();
+        query.put("ingredients", String.join(",", ingredients));
+        query.put("number", number);
+        query.put("ranking", 2);          // ít nguyên liệu thiếu nhất lên trước
+        query.put("ignorePantry", true);  // bỏ qua muối, nước, dầu...
+
+        SearchItem[] items = get(BY_INGREDIENTS_PATH, Map.of(), query, SearchItem[].class);
+        return Arrays.stream(items)
+                .filter(item -> item.id() != null)
+                .map(this::toSummary)
+                .toList();
     }
 
     @Override
