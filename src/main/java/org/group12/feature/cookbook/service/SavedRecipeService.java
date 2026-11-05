@@ -35,6 +35,14 @@ public class SavedRecipeService {
     private final SavedRecipeMapper mapper;
     private final AppUtil appUtil;
 
+    /** Không có từ khoá thì trả "%" (khớp tất cả), tránh tham số null kiểu chuỗi trong JPQL. */
+    private static String toLikePattern(String keyword) {
+        if (keyword == null || keyword.isBlank()) return "%";
+        String escaped = keyword.trim().toLowerCase()
+                .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return "%" + escaped + "%";
+    }
+
     @Transactional
     public SavedRecipeResponse save(SavedRecipeCreateRequest req) {
         UUID userId = appUtil.userIdFromAuthentication();
@@ -56,22 +64,28 @@ public class SavedRecipeService {
     }
 
     @Transactional(readOnly = true)
-    public CursorResponse<SavedRecipeResponse> list(UUID cursor, int size,
-                                                    Boolean favorite, UUID collectionId) {
+    public CursorResponse<SavedRecipeResponse> list(UUID cursor, int size, Boolean favorite,
+                                                    UUID collectionId, String keyword,
+                                                    Integer minRating, String sort) {
         UUID userId = appUtil.userIdFromAuthentication();
-        List<SavedRecipe> rows = savedRecipeRepository.findPage(
-                userId, cursor, favorite, collectionId, PageRequest.of(0, size + 1));
+        String pattern = toLikePattern(keyword);
+        PageRequest page = PageRequest.of(0, size + 1);
+
+        List<SavedRecipe> rows = "rating_desc".equals(sort)
+                ? savedRecipeRepository.findPageByRating(userId, cursor, favorite, collectionId, minRating, pattern, page)
+                : savedRecipeRepository.findPage(userId, cursor, favorite, collectionId, minRating, pattern, page);
 
         return appUtil.buildCursorResponse(rows, size, SavedRecipe::getId, mapper::toSavedRecipeResponse);
     }
+
 
     private Recipe resolveRecipe(SavedRecipeCreateRequest req) {
         if (req.getRecipeId() != null) {
             return recipeRepository.findById(req.getRecipeId())
                     .orElseThrow(RecipeNotFoundException::new);
         }
-        return recipeRepository.findByExternalId(req.getExternalId())
-                .orElseGet(() -> importExternal(req.getExternalId()));
+        // luôn đi qua RecipeService: nếu món mới chỉ được lưu từ kết quả tìm kiếm thì nó bổ sung nguyên liệu và các bước
+        return importExternal(req.getExternalId());
     }
 
     @Transactional(readOnly = true)

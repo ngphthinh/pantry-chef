@@ -1,8 +1,6 @@
 package org.group12.feature.recipe.service;
 
 import lombok.RequiredArgsConstructor;
-import org.group12.feature.recipe.dto.projection.MissingRow;
-import org.group12.feature.recipe.dto.projection.RecipeMatchRow;
 import org.group12.feature.recipe.dto.response.RecipeSummaryResponse;
 import org.group12.feature.recipe.entity.Recipe;
 import org.group12.feature.recipe.enums.Difficulty;
@@ -13,9 +11,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Tìm trong công thức đang có trong DB: công thức tự tạo của chính người dùng và các công thức không phải tự tạo
@@ -65,63 +71,76 @@ public class LocalRecipeSearchService {
     public List<RecipeSummaryResponse> searchByIngredients(
             UUID userId, Collection<String> include, Collection<String> excluded,
             UUID cuisineId, Integer maxMinutes, Difficulty difficulty) {
-
-        List<String> includeNames = normalize(include);
-        if (includeNames.isEmpty()) {
-            return List.of();
-        }
-        List<String> excludedNames = normalize(excluded);
-        if (excludedNames.isEmpty()) {
-            excludedNames = List.of("");          // tránh "in ()" rỗng
-        }
-
-        List<RecipeMatchRow> rows = recipeRepository.findIngredientMatches(
-                userId, includeNames, excludedNames, cuisineId, maxMinutes, difficulty,
-                PageRequest.of(0, MAX_LOCAL_RESULTS));
-        if (rows.isEmpty()) {
+        if (include.isEmpty()) {
             return List.of();
         }
 
-        List<UUID> ids = rows.stream().map(RecipeMatchRow::getRecipeId).toList();
+        Map<UUID, List<String>> ingredientsByRecipe =
+                groupByRecipe(recipeRepository.findAccessibleIngredientRows(userId));
 
-        Map<UUID, List<String>> missingByRecipe = recipeRepository
-                .findMissingNames(ids, includeNames).stream()
-                .collect(Collectors.groupingBy(MissingRow::getRecipeId,
-                        Collectors.mapping(MissingRow::getName, Collectors.toList())));
+        Map<UUID, Match> matches = new HashMap<>();
+        ingredientsByRecipe.forEach((recipeId, ingredients) -> {
+            if (containsExcluded(ingredients, excluded)) {
+                return;
+            }
+            Match match = score(ingredients, include);
+            if (match.used() > 0) {
+                matches.put(recipeId, match);
+            }
+        });
+        if (matches.isEmpty()) {
+            return List.of();
+        }
 
-        Map<UUID, Recipe> recipes = recipeRepository.findByIdIn(ids).stream()
-                .collect(Collectors.toMap(Recipe::getId, Function.identity()));
-
-        // giữ nguyên thứ tự DB đã sắp xếp
-        return rows.stream()
-                .filter(row -> recipes.containsKey(row.getRecipeId()))
-                .map(row -> {
-                    List<String> missing = missingByRecipe.getOrDefault(row.getRecipeId(), List.of());
-                    int used = (int) row.getUsed();
-                    int total = (int) row.getTotal();
-
-                    RecipeSummaryResponse response =
-                            recipeMapper.toSummaryResponse(recipes.get(row.getRecipeId()));
-                    response.setUsedIngredientCount(used);
-                    response.setMissedIngredientCount(missing.size());
-                    response.setMatchScore(total == 0 ? 0.0 : (double) used / total);
-                    response.setMissingIngredients(missing);
-                    return response;
-                })
-                .toList();
+        List<RecipeSummaryResponse> results = new ArrayList<>();
+        recipeRepository.findByIdIn(matches.keySet()).stream()
+                .filter(recipe -> matchesFilters(recipe, cuisineId, maxMinutes, difficulty))
+                .sorted(Comparator
+                        .comparingInt((Recipe recipe) -> -matches.get(recipe.getId()).used())
+                        .thenComparingInt(recipe -> matches.get(recipe.getId()).missing().size())
+                        .thenComparing(Recipe::getTitle, String.CASE_INSENSITIVE_ORDER))
+                .limit(MAX_LOCAL_RESULTS)
+                .forEach(recipe -> {
+                    Match match = matches.get(recipe.getId());
+                    RecipeSummaryResponse response = recipeMapper.toSummaryResponse(recipe);
+                    response.setUsedIngredientCount(match.used());
+                    response.setMissedIngredientCount(match.missing().size());
+                    response.setMatchScore((double) match.used() / (match.used() + match.missing().size()));
+                    response.setMissingIngredients(match.missing());
+                    results.add(response);
+                });
+        return results;
     }
 
-    private List<String> normalize(Collection<String> names) {
-        if (names == null) return List.of();
-        return names.stream()
-                .filter(Objects::nonNull)
-                .map(s -> s.trim().toLowerCase(Locale.ROOT))
-                .filter(s -> !s.isEmpty())
-                .distinct()
-                .toList();
-    }
     // ---------- private helpers ----------
 
+    private record Match(int used, List<String> missing) {
+    }
+
+    private Match score(List<String> recipeIngredients, Collection<String> include) {
+        Set<String> usedQueries = new HashSet<>();
+        List<String> missing = new ArrayList<>();
+        for (String ingredient : recipeIngredients) {
+            String normalized = normalize(ingredient);
+            String hit = include.stream().filter(normalized::contains).findFirst().orElse(null);
+            if (hit == null) {
+                missing.add(ingredient.trim());
+            } else {
+                usedQueries.add(hit);
+            }
+        }
+        return new Match(usedQueries.size(), missing);
+    }
+
+    private boolean matchesFilters(Recipe recipe, UUID cuisineId, Integer maxMinutes, Difficulty difficulty) {
+        if (cuisineId != null && (recipe.getCuisine() == null || !cuisineId.equals(recipe.getCuisine().getId()))) {
+            return false;
+        }
+        if (maxMinutes != null && (recipe.getReadyInMinutes() == null || recipe.getReadyInMinutes() > maxMinutes)) {
+            return false;
+        }
+        return difficulty == null || difficulty == recipe.getDifficulty();
+    }
 
     private boolean containsExcluded(List<String> recipeIngredients, Collection<String> excluded) {
         return recipeIngredients.stream()
