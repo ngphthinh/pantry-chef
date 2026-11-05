@@ -1,8 +1,9 @@
 package org.group12.common.config;
 
-import com.github.javafaker.Faker;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.group12.common.enums.Unit;
 import org.group12.common.utils.AppUtil;
 import org.group12.feature.auth.entity.Role;
 import org.group12.feature.auth.entity.User;
@@ -17,6 +18,12 @@ import org.group12.feature.cookbook.repository.SavedRecipeRepository;
 import org.group12.feature.feedback.entity.Feedback;
 import org.group12.feature.feedback.enums.FeedbackType;
 import org.group12.feature.feedback.repository.FeedbackRepository;
+import org.group12.feature.ingredient.entity.ExcludedIngredient;
+import org.group12.feature.ingredient.entity.Ingredient;
+import org.group12.feature.ingredient.entity.IngredientCategory;
+import org.group12.feature.ingredient.repository.ExcludedIngredientRepository;
+import org.group12.feature.ingredient.repository.IngredientCategoryRepository;
+import org.group12.feature.ingredient.repository.IngredientRepository;
 import org.group12.feature.mealplan.entity.MealPlan;
 import org.group12.feature.mealplan.entity.MealPlanEntry;
 import org.group12.feature.mealplan.enums.MealType;
@@ -37,40 +44,38 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.group12.common.enums.Unit;
-import org.group12.feature.ingredient.entity.ExcludedIngredient;
-import org.group12.feature.ingredient.entity.Ingredient;
-import org.group12.feature.ingredient.entity.IngredientCategory;
-import org.group12.feature.ingredient.repository.ExcludedIngredientRepository;
-import org.group12.feature.ingredient.repository.IngredientCategoryRepository;
-import org.group12.feature.ingredient.repository.IngredientRepository;
 
+import java.io.InputStream;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import java.time.LocalDate;
-import java.util.stream.Stream;
 
 @Slf4j
 @Profile("dev")
 @RequiredArgsConstructor
 @Component
 public class InitData implements CommandLineRunner {
-    private final FeedbackRepository feedbackRepository;
 
+    private static final String SEED_FILE = "seed/data.json";
+
+    private final FeedbackRepository feedbackRepository;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final PantryItemRepository pantryItemRepository;
     private final SavedRecipeRepository savedRecipeRepository;
     private final CollectionRepository collectionRepository;
-
     private final AppUtil appUtil;
     private final RecipeRepository recipeRepository;
     private final CuisineRepository cuisineRepository;
@@ -80,583 +85,382 @@ public class InitData implements CommandLineRunner {
     private final SyncStatusRepository syncStatusRepository;
     private final MealPlanRepository mealPlanRepository;
 
+    private final ObjectMapper mapper = new ObjectMapper();
+    // key: "email|recipeExternalId", dùng cho initCollections
+    private final Map<String, SavedRecipe> savedIndex = new HashMap<>();
 
     @Value("${app.password-default}")
     private String PASSWORD;
-    @Value("${spring.jpa.hibernate.ddl-auto}")
-    private String initData;
 
     @Override
-
     public void run(String @NonNull ... args) {
-        if (!"create".equals(initData) && !"create-drop".equals(initData)) {
-            log.info("Skipping data initialization because spring.jpa.hibernate.ddl-auto is not 'create' or 'create-drop'");
 
-        } else {
-            initRoles();
-            initUsers();
-            initCuisines();
-            initIngredientCategories();
-            initSyncStatuses();
-            initIngredients();
-            initExcludedIngredients();
-            initRecipes();
-            initPantryItems();
-            initMealPlans();
-            initSavedRecipes();
-            initCollections();
-            initFeedbacks();
+        SeedData data = readSeed();
 
-            log.info("Data initialization completed successfully.");
-        }
+        initRoles(data);
+        initUsers(data);
+        initCuisines(data);
+        initIngredientCategories(data);
+        initSyncStatuses(data);
+        initIngredients(data);
+        initExcludedIngredients(data);
+        initRecipes(data);
+        initPantryItems(data);
+        initMealPlans(data);
+        initSavedRecipes(data);
+        initCollections(data);
+        initFeedbacks(data);
 
+        log.info("Data initialization completed successfully.");
     }
 
-    private void initSyncStatuses() {
-        Map<String, String> statuses = new LinkedHashMap<>();
-        statuses.put("PENDING", "Chờ đồng bộ");
-        statuses.put("SYNCING", "Đang đồng bộ");
-        statuses.put("SYNCED", "Đã đồng bộ");
-        statuses.put("FAILED", "Đồng bộ thất bại");
-        statuses.put("CONFLICT", "Xung đột dữ liệu");
+    // ---------- helpers ----------
 
-        Set<String> existing = syncStatusRepository.findAllByCodeIn(statuses.keySet()).stream()
+    private SeedData readSeed() {
+        try (InputStream in = new ClassPathResource(SEED_FILE).getInputStream()) {
+            return mapper.readValue(in, SeedData.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot read " + SEED_FILE, e);
+        }
+    }
+
+    private Map<String, User> usersByEmail() {
+        return userRepository.findAll().stream()
+                .collect(Collectors.toMap(User::getEmail, Function.identity()));
+    }
+
+    private Map<String, Recipe> recipesByExternalId() {
+        return recipeRepository.findAll().stream()
+                .filter(r -> r.getExternalId() != null)
+                .collect(Collectors.toMap(Recipe::getExternalId, Function.identity()));
+    }
+
+    private Map<String, SyncStatus> syncStatusesByCode() {
+        return syncStatusRepository.findAll().stream()
+                .collect(Collectors.toMap(SyncStatus::getCode, Function.identity()));
+    }
+
+    // ---------- seeders ----------
+
+    private void initRoles(SeedData data) {
+        if (roleRepository.count() > 0) return;
+        roleRepository.saveAll(data.getRoles().stream()
+                .map(name -> Role.builder()
+                        .id(appUtil.generateUUID())
+                        .name(RoleName.valueOf(name))
+                        .build())
+                .toList());
+    }
+
+    private void initUsers(SeedData data) {
+        if (userRepository.count() > 0) return;
+        Map<String, Role> roles = roleRepository.findAll().stream()
+                .collect(Collectors.toMap(r -> r.getName().name(), Function.identity()));
+
+        userRepository.saveAll(data.getUsers().stream()
+                .map(u -> User.builder()
+                        .id(appUtil.generateUUID())
+                        .email(u.getEmail())
+                        .password(passwordEncoder.encode(u.getPassword() != null ? u.getPassword() : PASSWORD))
+                        .displayName(u.getDisplayName())
+                        .measurementSystem(MeasurementSystem.valueOf(u.getMeasurementSystem()))
+                        .themeMode(ThemeMode.valueOf(u.getThemeMode()))
+                        .roles(u.getRoles().stream().map(roles::get).collect(Collectors.toSet()))
+                        .build())
+                .toList());
+    }
+
+    private void initCuisines(SeedData data) {
+        if (cuisineRepository.count() > 0) return;
+        cuisineRepository.saveAll(data.getCuisines().stream()
+                .map(c -> Cuisine.builder()
+                        .id(appUtil.generateUUID())
+                        .code(c.getCode())
+                        .name(c.getName())
+                        .build())
+                .toList());
+    }
+
+    private void initIngredientCategories(SeedData data) {
+        if (ingredientCategoryRepository.count() > 0) return;
+        ingredientCategoryRepository.saveAll(data.getIngredientCategories().stream()
+                .map(c -> IngredientCategory.builder()
+                        .id(appUtil.generateUUID())
+                        .code(c.getCode())
+                        .name(c.getName())
+                        .sortOrder(c.getSortOrder())
+                        .build())
+                .toList());
+    }
+
+    private void initSyncStatuses(SeedData data) {
+        Set<String> existing = syncStatusRepository.findAll().stream()
                 .map(SyncStatus::getCode)
                 .collect(Collectors.toSet());
-
-        List<SyncStatus> missing = statuses.entrySet().stream()
-                .filter(e -> !existing.contains(e.getKey()))
-                .map(e -> SyncStatus.builder()
+        List<SyncStatus> missing = data.getSyncStatuses().stream()
+                .filter(s -> !existing.contains(s.getCode()))
+                .map(s -> SyncStatus.builder()
                         .id(appUtil.generateUUID())
-                        .code(e.getKey())
-                        .name(e.getValue())
+                        .code(s.getCode())
+                        .name(s.getName())
                         .build())
                 .toList();
-
         if (!missing.isEmpty()) {
             syncStatusRepository.saveAll(missing);
             log.info("Seeded {} sync statuses", missing.size());
         }
     }
 
-    private void initIngredientCategories() {
-        if (ingredientCategoryRepository.count() == 0) {
-            List<String> rows = new ArrayList<>(List.of(
-                    "VEGETABLE:Rau củ", "FRUIT:Trái cây", "MEAT:Thịt", "SEAFOOD:Hải sản", "EGG:Trứng",
-                    "DAIRY:Sữa và chế phẩm từ sữa", "GRAIN:Gạo, bột, ngũ cốc", "LEGUME_NUT:Đậu và hạt",
-                    "SPICE_HERB:Gia vị và rau thơm", "SAUCE_CONDIMENT:Nước chấm và sốt", "OIL_FAT:Dầu mỡ",
-                    "CANNED_PROCESSED:Đồ hộp và thực phẩm chế biến sẵn", "BEVERAGE:Đồ uống", "OTHER:Khác"));
-            // sortOrder: nhóm cuối danh sách ("Khác") = 1 để luôn nằm dưới cùng, các nhóm còn lại = 0
-            List<IngredientCategory> categories = new ArrayList<>();
-            for (int i = 0; i < rows.size(); i++) {
-                String[] p = rows.get(i).split(":");
-                categories.add(IngredientCategory.builder()
-                        .id(appUtil.generateUUID())
-                        .code(p[0])
-                        .name(p[1])
-                        .sortOrder(i == rows.size() - 1 ? 1 : 0)
-                        .build());
-            }
-            ingredientCategoryRepository.saveAll(categories);
-        }
-    }
-
-    private void initIngredients() {
-        if (ingredientRepository.count() > 0) {
-            return;
-        }
-
+    private void initIngredients(SeedData data) {
+        if (ingredientRepository.count() > 0) return;
         Map<String, IngredientCategory> categories = ingredientCategoryRepository.findAll().stream()
                 .collect(Collectors.toMap(IngredientCategory::getCode, Function.identity()));
 
-        Map<String, String[]> data = new LinkedHashMap<>();
-        data.put("VEGETABLE", new String[]{"Cà chua:PCS", "Hành tây:PCS", "Cà rốt:PCS", "Khoai tây:G", "Rau muống:G",
-                "Cải thảo:G", "Bông cải xanh:G", "Dưa leo:PCS", "Nấm rơm:G"});
-        data.put("FRUIT", new String[]{"Chuối:PCS", "Chanh:PCS", "Cam:PCS", "Xoài:PCS", "Dứa:PCS"});
-        data.put("MEAT", new String[]{"Thịt ba chỉ:G", "Thịt bò:G", "Ức gà:G", "Sườn heo:G", "Thịt heo xay:G"});
-        data.put("SEAFOOD", new String[]{"Tôm:G", "Cá basa:G", "Mực:G", "Cá hồi:G"});
-        data.put("EGG", new String[]{"Trứng gà:PCS", "Trứng vịt:PCS", "Trứng cút:PCS"});
-        data.put("DAIRY", new String[]{"Sữa tươi:ML:8934000000011", "Bơ:G", "Phô mai:G", "Sữa chua:G"});
-        data.put("GRAIN", new String[]{"Gạo:G", "Bún tươi:G", "Mì sợi:G", "Bột mì:G", "Bánh phở:G"});
-        data.put("LEGUME_NUT", new String[]{"Đậu hũ:PCS", "Đậu phộng:G", "Đậu xanh:G", "Mè trắng:G"});
-        data.put("SPICE_HERB", new String[]{"Tỏi:G", "Hành lá:G", "Sả:PCS", "Gừng:G", "Ớt:PCS", "Rau mùi:G",
-                "Muối:TSP", "Đường:TSP", "Tiêu:TSP"});
-        data.put("SAUCE_CONDIMENT", new String[]{"Nước mắm:ML:8934000000028", "Nước tương:ML", "Dầu hào:ML",
-                "Tương ớt:ML:8934000000035"});
-        data.put("OIL_FAT", new String[]{"Dầu ăn:ML", "Dầu olive:ML", "Mỡ heo:G"});
-        data.put("CANNED_PROCESSED", new String[]{"Cá hộp:G", "Xúc xích:PCS", "Ngô hộp:G"});
-        data.put("BEVERAGE", new String[]{"Nước dừa:ML", "Cà phê:G", "Trà:G"});
-        data.put("OTHER", new String[]{"Men nở:G"});
-
-        List<Ingredient> ingredients = new ArrayList<>();
-        data.forEach((categoryCode, rows) -> {
-            IngredientCategory category = categories.get(categoryCode);
+        List<Ingredient> list = new ArrayList<>();
+        for (SeedData.IngredientSeed s : data.getIngredients()) {
+            IngredientCategory category = categories.get(s.getCategory());
             if (category == null) {
-                log.warn("Skip seeding ingredients: category {} not found", categoryCode);
-                return;
+                log.warn("Skip ingredient '{}': category {} not found", s.getName(), s.getCategory());
+                continue;
             }
-            for (String row : rows) {
-                String[] p = row.split(":");
-                ingredients.add(Ingredient.builder()
-                        .id(appUtil.generateUUID())
-                        .name(p[0])
-                        .defaultUnit(Unit.valueOf(p[1]))
-                        .barcode(p.length > 2 ? p[2] : null)
-                        .category(category)
-                        .build());
-            }
-        });
-        ingredientRepository.saveAll(ingredients);
-    }
-
-    /**
-     * Vài nguyên liệu loại trừ cho tài khoản admin để test API.
-     */
-    private void initExcludedIngredients() {
-        if (excludedIngredientRepository.count() > 0) {
-            return;
-        }
-        userRepository.findByEmail("admin@gmail.com").ifPresent(admin ->
-                excludedIngredientRepository.saveAll(
-                        Stream.of("Tôm", "Đậu phộng", "Sữa tươi")
-                                .map(name -> ExcludedIngredient.builder()
-                                        .id(appUtil.generateUUID())
-                                        .name(name)
-                                        .user(admin)
-                                        .build())
-                                .toList()));
-    }
-
-    private void initUsers() {
-        Faker fakeData = new Faker();
-        int numberOfUsers = 100;
-        Role role = roleRepository.findByName(RoleName.ROLE_USER).orElseThrow();
-        if (userRepository.count() == 0) {
-
-            User user = User.builder()
-                    .email("admin@gmail.com")
-                    .password(passwordEncoder.encode("Admin@123"))
-                    .measurementSystem(MeasurementSystem.METRIC)
+            list.add(Ingredient.builder()
                     .id(appUtil.generateUUID())
-                    .themeMode(org.group12.feature.auth.enums.ThemeMode.LIGHT)
-                    .roles(Set.copyOf(roleRepository.findAll()))
-                    .build();
-            userRepository.save(user);
+                    .name(s.getName())
+                    .defaultUnit(Unit.valueOf(s.getDefaultUnit()))
+                    .barcode(s.getBarcode())
+                    .category(category)
+                    .build());
+        }
+        ingredientRepository.saveAll(list);
+        log.info("Seeded {} ingredients", list.size());
+    }
 
-            List<User> users = new ArrayList<>();
-            for (int i = 0; i < numberOfUsers; i++) {
-                String email = fakeData.internet().emailAddress();
-                String password = PASSWORD;
-                String displayName = fakeData.name().fullName();
-                MeasurementSystem measurementSystem = i % 2 == 0 ? MeasurementSystem.METRIC : MeasurementSystem.IMPERIAL;
-                ThemeMode themeMode = i % 2 == 0 ? ThemeMode.LIGHT : ThemeMode.DARK;
-
-                users.add(User.builder()
-                        .id(appUtil.generateUUID())
-                        .email(email)
-                        .password(passwordEncoder.encode(password))
-                        .displayName(displayName)
-                        .measurementSystem(measurementSystem)
-                        .themeMode(themeMode)
-                        .roles(Set.of(role))
-                        .build());
-
+    private void initExcludedIngredients(SeedData data) {
+        if (excludedIngredientRepository.count() > 0) return;
+        Map<String, User> users = usersByEmail();
+        List<ExcludedIngredient> list = new ArrayList<>();
+        for (SeedData.ExcludedIngredientSeed s : data.getExcludedIngredients()) {
+            User user = users.get(s.getUserEmail());
+            if (user == null) {
+                log.warn("Skip excluded ingredient '{}': user {} not found", s.getName(), s.getUserEmail());
+                continue;
             }
-            userRepository.saveAll(users);
+            list.add(ExcludedIngredient.builder()
+                    .id(appUtil.generateUUID())
+                    .name(s.getName())
+                    .user(user)
+                    .build());
         }
+        excludedIngredientRepository.saveAll(list);
     }
 
-    private void initRoles() {
-        if (roleRepository.count() == 0) {
-            List<Role> roles = List.of(Role.builder().id(appUtil.generateUUID()).name(RoleName.ROLE_ADMIN).build(), Role.builder().id(appUtil.generateUUID()).name(RoleName.ROLE_USER).build());
-            roleRepository.saveAll(roles);
-        }
-    }
-
-    private void initCuisines() {
-        if (cuisineRepository.count() == 0) {
-            List<Cuisine> cuisines = Stream.of("VIETNAMESE:Vietnamese", "ASIAN:Asian", "WESTERN:Western", "ITALIAN:Italian", "OTHER:Other")
-                    .map(s -> s.split(":"))
-                    .map(p -> Cuisine.builder().id(appUtil.generateUUID()).code(p[0]).name(p[1]).build())
-                    .toList();
-            cuisineRepository.saveAll(cuisines);
-        }
-    }
-
-
-    private static final List<String> DISHES = List.of(
-            "Phở bò", "Bún chả", "Cơm tấm sườn", "Bánh xèo", "Gỏi cuốn", "Canh chua cá lóc",
-            "Thịt kho tàu", "Bún bò Huế", "Mì Quảng", "Cá kho tộ", "Rau muống xào tỏi",
-            "Gà nướng sả", "Bò lúc lắc", "Canh bí đao tôm", "Đậu hũ sốt cà chua",
-            "Trứng chiên hành", "Chả giò", "Bún riêu cua", "Hủ tiếu Nam Vang", "Cháo gà");
-
-    private static final List<String> STEPS = List.of(
-            "Sơ chế và rửa sạch nguyên liệu.",
-            "Ướp nguyên liệu với gia vị trong 15 phút.",
-            "Phi thơm hành tỏi với dầu ăn.",
-            "Cho nguyên liệu chính vào xào hoặc nướng đến khi săn lại.",
-            "Thêm nước và nấu liu riu đến khi mềm.",
-            "Nêm nếm lại cho vừa ăn.",
-            "Bày ra đĩa và thưởng thức khi còn nóng.");
-
-    //init mới 5 data
-    private void initRecipes() {
-        if (recipeRepository.count() > 0) {
-            return;
-        }
-
-        List<Cuisine> cuisines = cuisineRepository.findAll();
-        List<Ingredient> pool = ingredientRepository.findAll();
-        List<User> owners = userRepository.findAll(PageRequest.of(0, 5)).getContent();
-        if (cuisines.isEmpty() || pool.isEmpty()) {
-            log.warn("Skip seeding recipes: cuisines or ingredients missing");
-            return;
-        }
-
-        Faker faker = new Faker(new Random(42)); // seed cố định → dữ liệu lặp lại được
-        Difficulty[] difficulties = Difficulty.values();
-        int total = 5;                                   // trước đây: 60
-        int customCount = owners.isEmpty() ? 0 : 2;      // trước đây: 10
+    private void initRecipes(SeedData data) {
+        if (recipeRepository.count() > 0) return;
+        Map<String, Cuisine> cuisines = cuisineRepository.findAll().stream()
+                .collect(Collectors.toMap(Cuisine::getCode, Function.identity()));
 
         List<Recipe> recipes = new ArrayList<>();
-        for (int i = 0; i < total; i++) {
-            boolean custom = i < customCount;
-            String title = DISHES.get(i % DISHES.size())
-                    + (i >= DISHES.size() ? " #" + (i / DISHES.size() + 1) : "");
+        for (SeedData.RecipeSeed s : data.getRecipes()) {
+            Cuisine cuisine = cuisines.get(s.getCuisine());
+            if (cuisine == null) {
+                log.warn("Skip recipe '{}': cuisine {} not found", s.getTitle(), s.getCuisine());
+                continue;
+            }
 
             Recipe recipe = Recipe.builder()
                     .id(appUtil.generateUUID())
-                    .title(title)
-                    .imageUrl("https://picsum.photos/seed/recipe" + i + "/600/400")
-                    .servings(faker.number().numberBetween(1, 8))
-                    .readyInMinutes(faker.number().numberBetween(10, 120))
-                    .difficulty(difficulties[faker.number().numberBetween(0, difficulties.length)])
-                    .custom(custom)
-                    .cuisine(cuisines.get(faker.number().numberBetween(0, cuisines.size())))
+                    .externalId(s.getExternalId())
+                    .title(s.getTitle())
+                    .imageUrl(s.getImageUrl())
+                    .servings(s.getServings())
+                    .readyInMinutes(s.getReadyInMinutes())
+                    .difficulty(Difficulty.valueOf(s.getDifficulty()))
+                    .custom(false)
+                    .cuisine(cuisine)
                     .build();
 
-            if (custom) {
-                recipe.setOwner(owners.get(i % owners.size()));
-            } else {
-                recipe.setExternalId("seed-" + (100000 + i));
-                recipe.setSourceUrl("https://example.com/recipes/seed-" + (100000 + i));
+            for (SeedData.RecipeIngredientSeed ing : s.getIngredients()) {
+                recipe.getIngredients().add(RecipeIngredient.builder()
+                        .id(appUtil.generateUUID())
+                        .recipe(recipe)
+                        .name(ing.getName())
+                        .amount(ing.getAmount())
+                        .unit(Unit.valueOf(ing.getUnit()))
+                        .build());
             }
 
-            // ... phần nguyên liệu và các bước giữ nguyên như cũ ...
-
+            int order = 1;
+            for (SeedData.RecipeStepSeed st : s.getSteps()) {
+                recipe.getSteps().add(RecipeStep.builder()
+                        .id(appUtil.generateUUID())
+                        .recipe(recipe)
+                        .stepOrder(order++)
+                        .text(st.getText())
+                        .timerSeconds(st.getTimerSeconds())
+                        .build());
+            }
             recipes.add(recipe);
         }
-
         recipeRepository.saveAll(recipes);
-        log.info("Seeded {} recipes ({} custom)", recipes.size(), customCount);
+        log.info("Seeded {} recipes", recipes.size());
     }
 
-
-    //init cũ nhiều data
-//    private void initRecipes() {
-//        if (recipeRepository.count() > 0) {
-//            return;
-//        }
-//
-//        List<Cuisine> cuisines = cuisineRepository.findAll();
-//        List<Ingredient> pool = ingredientRepository.findAll();
-//        List<User> owners = userRepository.findAll(PageRequest.of(0, 5)).getContent();
-//        if (cuisines.isEmpty() || pool.isEmpty()) {
-//            log.warn("Skip seeding recipes: cuisines or ingredients missing");
-//            return;
-//        }
-//
-//        Faker faker = new Faker(new Random(42)); // seed cố định → dữ liệu lặp lại được
-//        Difficulty[] difficulties = Difficulty.values();
-//        int total = 60;
-//        int customCount = owners.isEmpty() ? 0 : 10;
-//
-//        List<Recipe> recipes = new ArrayList<>();
-//        for (int i = 0; i < total; i++) {
-//            boolean custom = i < customCount;
-//            String title = DISHES.get(i % DISHES.size())
-//                    + (i >= DISHES.size() ? " #" + (i / DISHES.size() + 1) : "");
-//
-//            Recipe recipe = Recipe.builder()
-//                    .id(appUtil.generateUUID())
-//                    .title(title)
-//                    .imageUrl("https://picsum.photos/seed/recipe" + i + "/600/400")
-//                    .servings(faker.number().numberBetween(1, 8))
-//                    .readyInMinutes(faker.number().numberBetween(10, 120))
-//                    .difficulty(difficulties[faker.number().numberBetween(0, difficulties.length)])
-//                    .custom(custom)
-//                    .cuisine(cuisines.get(faker.number().numberBetween(0, cuisines.size())))
-//                    .build();
-//
-//            if (custom) {
-//                recipe.setOwner(owners.get(i % owners.size()));
-//            } else {
-    ////                recipe.setExternalId("seed-" + (100000 + i));
-    ////                recipe.setSourceUrl("https://example.com/recipes/seed-" + (100000 + i));
-//            }
-//
-//            List<Ingredient> shuffled = new ArrayList<>(pool);
-//            Collections.shuffle(shuffled, new Random(i));
-//            int ingredientCount = faker.number().numberBetween(4, 9);
-//            for (Ingredient ing : shuffled.subList(0, Math.min(ingredientCount, shuffled.size()))) {
-//                recipe.getIngredients().add(RecipeIngredient.builder()
-//                        .id(appUtil.generateUUID())
-//                        .recipe(recipe)
-//                        .name(ing.getName())
-//                        .amount((double) faker.number().numberBetween(1, 500))
-//                        .unit(ing.getDefaultUnit())
-//                        .build());
-//            }
-//
-//            int stepCount = faker.number().numberBetween(3, STEPS.size() + 1);
-//            for (int s = 0; s < stepCount; s++) {
-//                recipe.getSteps().add(RecipeStep.builder()
-//                        .id(appUtil.generateUUID())
-//                        .recipe(recipe)
-//                        .stepOrder(s + 1)
-//                        .text(STEPS.get(s))
-//                        .timerSeconds(STEP_TIMERS.get(s))   // null nếu bước không cần hẹn giờ
-//                        .build());
-//            }
-//
-//            recipes.add(recipe);
-//        }
-//
-//        recipeRepository.saveAll(recipes);
-//        log.info("Seeded {} recipes ({} custom)", recipes.size(), customCount);
-//    }
-
-    // cùng thứ tự với STEPS: bước 2 ướp 15 phút, bước 5 hầm 20 phút
-    private static final List<Integer> STEP_TIMERS = Arrays.asList(
-            null, 900, null, null, 1200, null, null);
-
-    private void initPantryItems() {
-        if (pantryItemRepository.count() > 0) {
-            return;
-        }
-        User admin = userRepository.findByEmail("admin@gmail.com").orElse(null);
-        List<Ingredient> ingredients = ingredientRepository.findAll();
-        if (admin == null || ingredients.isEmpty()) {
-            log.warn("Skip seeding pantry items: admin or ingredients missing");
-            return;
-        }
-
-        SyncStatus synced = syncStatusRepository.findAllByCodeIn(Set.of("SYNCED")).stream()
-                .findFirst().orElse(null);
-
-        // bỏ các nguyên liệu admin đã loại trừ để dữ liệu test không mâu thuẫn
-        Set<String> excluded = Set.of("Tôm", "Đậu phộng", "Sữa tươi");
-        List<Ingredient> candidates = ingredients.stream()
-                .filter(i -> !excluded.contains(i.getName()))
-                .collect(Collectors.toCollection(ArrayList::new));
-
-        Collections.shuffle(candidates, new Random(42));   // seed cố định → lặp lại được
-        Random random = new Random(42);
-        StorageLocation[] locations = StorageLocation.values();
+    private void initPantryItems(SeedData data) {
+        if (pantryItemRepository.count() > 0) return;
+        Map<String, User> users = usersByEmail();
+        Map<String, Ingredient> ingredients = ingredientRepository.findAll().stream()
+                .collect(Collectors.toMap(Ingredient::getName, Function.identity()));
+        Map<String, SyncStatus> statuses = syncStatusesByCode();
         LocalDate today = LocalDate.now();
 
-        List<PantryItem> items = candidates.stream()
-                .limit(15)
-                .map(ing -> PantryItem.builder()
-                        .id(appUtil.generateUUID())
-                        .user(admin)
-                        .ingredient(ing)
-                        .quantity((random.nextDouble(500) + 1))
-                        .unit(ing.getDefaultUnit())
-                        .location(locations[random.nextInt(locations.length)])
-                        .expiryDate(today.plusDays(random.nextInt(30) + 1))
-                        .syncStatus(synced)
-                        .build())
-                .toList();
-
+        List<PantryItem> items = new ArrayList<>();
+        for (SeedData.PantryItemSeed s : data.getPantryItems()) {
+            User user = users.get(s.getUserEmail());
+            Ingredient ingredient = ingredients.get(s.getIngredient());
+            if (user == null || ingredient == null) {
+                log.warn("Skip pantry item '{}' of {}: user or ingredient not found", s.getIngredient(), s.getUserEmail());
+                continue;
+            }
+            items.add(PantryItem.builder()
+                    .id(appUtil.generateUUID())
+                    .user(user)
+                    .ingredient(ingredient)
+                    .quantity(s.getQuantity())
+                    .unit(ingredient.getDefaultUnit())
+                    .location(StorageLocation.valueOf(s.getLocation()))
+                    .expiryDate(today.plusDays(s.getExpiryInDays()))
+                    .syncStatus(statuses.get(s.getSyncStatus()))
+                    .build());
+        }
         pantryItemRepository.saveAll(items);
-        log.info("Seeded {} pantry items for admin", items.size());
+        log.info("Seeded {} pantry items", items.size());
     }
 
-    private void initMealPlans() {
-        if (mealPlanRepository.count() > 0) {
-            return;
-        }
-        User admin = userRepository.findByEmail("admin@gmail.com").orElse(null);
-        List<Recipe> recipes = new ArrayList<>(recipeRepository.findAll());
-        if (admin == null || recipes.isEmpty()) {
-            log.warn("Skip seeding meal plans: admin or recipes missing");
-            return;
-        }
-
-        // công thức custom của người khác không được dùng cho admin
-        recipes.removeIf(r -> r.isCustom()
-                && (r.getOwner() == null || !r.getOwner().getId().equals(admin.getId())));
-        if (recipes.isEmpty()) {
-            log.warn("Skip seeding meal plans: no usable recipes");
-            return;
-        }
-
-        Collections.shuffle(recipes, new Random(42));   // seed cố định → lặp lại được
-        Random random = new Random(42);
+    private void initMealPlans(SeedData data) {
+        if (mealPlanRepository.count() > 0) return;
+        Map<String, User> users = usersByEmail();
+        Map<String, Recipe> recipes = recipesByExternalId();
         LocalDate today = LocalDate.now();
         LocalDate thisMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        MealType[] meals = MealType.values();
-        int cursor = 0;
 
         List<MealPlan> plans = new ArrayList<>();
-        for (int week = 0; week < 2; week++) {               // tuần này + tuần sau
+        for (SeedData.MealPlanSeed p : data.getMealPlans()) {
+            User user = users.get(p.getUserEmail());
+            if (user == null) {
+                log.warn("Skip meal plan: user {} not found", p.getUserEmail());
+                continue;
+            }
             MealPlan plan = MealPlan.builder()
                     .id(appUtil.generateUUID())
-                    .weekStart(thisMonday.plusWeeks(week))
-                    .user(admin)
+                    .weekStart(thisMonday.plusWeeks(p.getWeekOffset()))
+                    .user(user)
                     .build();
 
-            for (int day = 0; day < 7; day++) {
-                LocalDate date = plan.getWeekStart().plusDays(day);
-                for (MealType meal : meals) {
-                    Recipe recipe = recipes.get(cursor++ % recipes.size());   // xoay vòng, ít trùng món
-                    plan.getEntries().add(MealPlanEntry.builder()
-                            .id(appUtil.generateUUID())
-                            .mealPlan(plan)
-                            .recipe(recipe)
-                            .date(date)
-                            .mealType(meal)
-                            .servings(random.nextInt(4) + 1)
-                            .cooked(date.isBefore(today))      // ngày đã qua = đã nấu
-                            .build());
+            for (SeedData.MealPlanEntrySeed e : p.getEntries()) {
+                Recipe recipe = recipes.get(e.getRecipeExternalId());
+                if (recipe == null) {
+                    log.warn("Skip meal entry: recipe {} not found", e.getRecipeExternalId());
+                    continue;
                 }
+                LocalDate date = plan.getWeekStart().plusDays(e.getDayOffset());
+                plan.getEntries().add(MealPlanEntry.builder()
+                        .id(appUtil.generateUUID())
+                        .mealPlan(plan)
+                        .recipe(recipe)
+                        .date(date)
+                        .mealType(MealType.valueOf(e.getMealType()))
+                        .servings(e.getServings())
+                        .cooked(date.isBefore(today))
+                        .build());
             }
             plans.add(plan);
         }
-
         mealPlanRepository.saveAll(plans);
-        log.info("Seeded {} meal plans ({} entries) for admin", plans.size(),
-                plans.stream().mapToInt(p -> p.getEntries().size()).sum());
+        log.info("Seeded {} meal plans", plans.size());
     }
 
-    private static final List<String> NOTES = Arrays.asList(
-            "Nêm ít muối hơn lần sau.", "Cả nhà đều thích.", "Nên ướp lâu hơn.",
-            "Hợp để nấu cuối tuần.", "Giảm đường một chút.", null, null);
+    private void initSavedRecipes(SeedData data) {
+        if (savedRecipeRepository.count() > 0) return;
+        Map<String, User> users = usersByEmail();
+        Map<String, Recipe> recipes = recipesByExternalId();
+        Map<String, SyncStatus> statuses = syncStatusesByCode();
 
-    private void initSavedRecipes() {
-        if (savedRecipeRepository.count() > 0) {
-            return;
-        }
-        User admin = userRepository.findByEmail("admin@gmail.com").orElse(null);
-        List<Recipe> recipes = new ArrayList<>(recipeRepository.findAll());
-        if (admin == null || recipes.isEmpty()) {
-            log.warn("Skip seeding saved recipes: admin or recipes missing");
-            return;
-        }
-
-        // công thức custom của người khác không được lưu vào sách của admin
-        recipes.removeIf(r -> r.isCustom()
-                && (r.getOwner() == null || !r.getOwner().getId().equals(admin.getId())));
-
-        SyncStatus synced = syncStatusRepository.findAllByCodeIn(Set.of("SYNCED")).stream()
-                .findFirst().orElse(null);
-
-        Collections.shuffle(recipes, new Random(42));   // seed cố định → lặp lại được
-        Random random = new Random(42);
-
-        List<SavedRecipe> saved = recipes.stream()
-                .limit(15)
-                .map(recipe -> SavedRecipe.builder()
-                        .id(appUtil.generateUUID())
-                        .user(admin)
-                        .recipe(recipe)
-                        .rating(random.nextInt(5) + 1)                       // 1..5
-                        .note(NOTES.get(random.nextInt(NOTES.size())))       // có thể null
-                        .favorite(random.nextInt(100) < 30)                  // ~30% yêu thích
-                        .syncStatus(synced)
-                        .build())
-                .toList();
-
-        savedRecipeRepository.saveAll(saved);
-        log.info("Seeded {} saved recipes for admin", saved.size());
-    }
-    private static final List<String> COLLECTION_NAMES = List.of(
-            "Món yêu thích", "Nấu nhanh ngày thường", "Cuối tuần", "Món chay", "Tiệc gia đình");
-
-    private void initCollections() {
-        if (collectionRepository.count() > 0) {
-            return;
-        }
-        User admin = userRepository.findByEmail("admin@gmail.com").orElse(null);
-        if (admin == null) {
-            log.warn("Skip seeding collections: admin missing");
-            return;
-        }
-        List<SavedRecipe> savedRecipes = savedRecipeRepository.findAll().stream()
-                .filter(s -> s.getUser().getId().equals(admin.getId()))
-                .collect(Collectors.toCollection(ArrayList::new));
-        if (savedRecipes.isEmpty()) {
-            log.warn("Skip seeding collections: no saved recipes");
-            return;
-        }
-
-        Collections.shuffle(savedRecipes, new Random(42));   // seed cố định → lặp lại được
-        Random random = new Random(42);
-
-        List<org.group12.feature.cookbook.entity.Collection> collections = new ArrayList<>();
-        for (String name : COLLECTION_NAMES) {
-            int size = Math.min(savedRecipes.size(), random.nextInt(4) + 2);   // 2..5 món
-            Collections.shuffle(savedRecipes, new Random(random.nextLong()));
-
-            collections.add(org.group12.feature.cookbook.entity.Collection.builder()
+        List<SavedRecipe> list = new ArrayList<>();
+        for (SeedData.SavedRecipeSeed s : data.getSavedRecipes()) {
+            User user = users.get(s.getUserEmail());
+            Recipe recipe = recipes.get(s.getRecipeExternalId());
+            if (user == null || recipe == null) {
+                log.warn("Skip saved recipe {} of {}: user or recipe not found", s.getRecipeExternalId(), s.getUserEmail());
+                continue;
+            }
+            SavedRecipe saved = SavedRecipe.builder()
                     .id(appUtil.generateUUID())
-                    .name(name)
-                    .user(admin)
-                    .savedRecipes(new HashSet<>(savedRecipes.subList(0, size)))
+                    .user(user)
+                    .recipe(recipe)
+                    .rating(s.getRating())
+                    .note(s.getNote())
+                    .favorite(s.isFavorite())
+                    .syncStatus(statuses.get(s.getSyncStatus()))
+                    .build();
+            list.add(saved);
+            savedIndex.put(s.getUserEmail() + "|" + s.getRecipeExternalId(), saved);
+        }
+        savedRecipeRepository.saveAll(list);
+        log.info("Seeded {} saved recipes", list.size());
+    }
+
+    private void initCollections(SeedData data) {
+        if (collectionRepository.count() > 0) return;
+        Map<String, User> users = usersByEmail();
+
+        List<org.group12.feature.cookbook.entity.Collection> list = new ArrayList<>();
+        for (SeedData.CollectionSeed c : data.getCollections()) {
+            User user = users.get(c.getUserEmail());
+            if (user == null) {
+                log.warn("Skip collection '{}': user {} not found", c.getName(), c.getUserEmail());
+                continue;
+            }
+            Set<SavedRecipe> members = new HashSet<>();
+            for (String externalId : c.getRecipeExternalIds()) {
+                SavedRecipe saved = savedIndex.get(c.getUserEmail() + "|" + externalId);
+                if (saved == null) {
+                    log.warn("Collection '{}': recipe {} is not in saved recipes", c.getName(), externalId);
+                    continue;
+                }
+                members.add(saved);
+            }
+            list.add(org.group12.feature.cookbook.entity.Collection.builder()
+                    .id(appUtil.generateUUID())
+                    .name(c.getName())
+                    .user(user)
+                    .savedRecipes(members)
                     .build());
         }
-
-        collectionRepository.saveAll(collections);
-        log.info("Seeded {} collections for admin", collections.size());
+        collectionRepository.saveAll(list);
+        log.info("Seeded {} collections", list.size());
     }
 
-    private static final List<String> FEEDBACK_MESSAGES = List.of(
-            "Ứng dụng bị lỗi khi quét ảnh nguyên liệu.",
-            "Gợi ý thay thế nguyên liệu rất hữu ích.",
-            "Mong muốn thêm chế độ tối cho màn hình công thức.",
-            "Không thể lưu thực đơn tuần, báo lỗi 500.",
-            "Giao diện tủ nguyên liệu dễ dùng, cảm ơn nhóm.",
-            "Thông báo hết hạn đến chậm vài giờ.",
-            "Đề xuất thêm bộ lọc theo thời gian nấu.",
-            "Ảnh món ăn tải rất lâu trên mạng 4G.",
-            "Nút yêu thích đôi khi không phản hồi.",
-            "Công thức AI điều chỉnh khá chính xác.");
+    private void initFeedbacks(SeedData data) {
+        if (feedbackRepository.count() > 0) return;
+        Map<String, User> users = usersByEmail();
 
-    private static final List<String> APP_VERSIONS = List.of("1.0.0", "1.0.1", "1.1.0", "1.2.0");
-    private static final List<String> DEVICES = List.of(
-            "Pixel 7 / Android 14", "Galaxy S23 / Android 14",
-            "iPhone 14 / iOS 17", "iPhone 12 / iOS 16", "Redmi Note 12 / Android 13");
-
-    private void initFeedbacks() {
-        if (feedbackRepository.count() > 0) {
-            return;
-        }
-        List<User> users = userRepository.findAll(PageRequest.of(0, 20)).getContent();
-        if (users.isEmpty()) {
-            log.warn("Skip seeding feedbacks: no users");
-            return;
-        }
-
-        Random random = new Random(42);   // seed cố định → lặp lại được
-        FeedbackType[] types = FeedbackType.values();
-
-        List<Feedback> feedbacks = new ArrayList<>();
-        for (int i = 0; i < 40; i++) {
-            String message = FEEDBACK_MESSAGES.get(i % FEEDBACK_MESSAGES.size())
-                    + (i >= FEEDBACK_MESSAGES.size() ? " (#" + (i / FEEDBACK_MESSAGES.size() + 1) + ")" : "");
-
-            feedbacks.add(Feedback.builder()
+        List<Feedback> list = new ArrayList<>();
+        for (SeedData.FeedbackSeed f : data.getFeedbacks()) {
+            User user = users.get(f.getUserEmail());
+            if (user == null) {
+                log.warn("Skip feedback: user {} not found", f.getUserEmail());
+                continue;
+            }
+            list.add(Feedback.builder()
                     .id(appUtil.generateUUID())
-                    .type(types[random.nextInt(types.length)])
-                    .message(message)
-                    .appVersion(APP_VERSIONS.get(random.nextInt(APP_VERSIONS.size())))
-                    .deviceInfo(DEVICES.get(random.nextInt(DEVICES.size())))
-                    .user(users.get(random.nextInt(users.size())))
+                    .type(FeedbackType.valueOf(f.getType()))
+                    .message(f.getMessage())
+                    .appVersion(f.getAppVersion())
+                    .deviceInfo(f.getDeviceInfo())
+                    .user(user)
                     .build());
         }
-
-        feedbackRepository.saveAll(feedbacks);
-        log.info("Seeded {} feedbacks", feedbacks.size());
+        feedbackRepository.saveAll(list);
+        log.info("Seeded {} feedbacks", list.size());
     }
 }

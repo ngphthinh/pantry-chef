@@ -33,7 +33,7 @@ public class SubstitutionService {
     private final double minConfidence;
     private final int maxResults;
     private final AppUtil appUtil;
-
+    private final String template;
     public SubstitutionService(
             ChatClient.Builder builder,
             PromptLoader promptLoader,
@@ -48,6 +48,7 @@ public class SubstitutionService {
         this.recipeRepository = recipeRepository;
         this.promptPath = promptPath;
         this.minConfidence = minConfidence;
+        this.template = promptLoader.load(promptPath);
         this.maxResults = maxResults;
         this.appUtil = appUtil;
     }
@@ -58,7 +59,6 @@ public class SubstitutionService {
         String recipe = resolveRecipeTitle(request, currentUserId);
 
         contentGuard.checkText(ingredient, recipe);                     // 422
-        String template = promptLoader.load(promptPath);
 
         List<SubstitutionResponse> result;
         try {

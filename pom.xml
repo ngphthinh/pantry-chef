@@ -165,6 +165,7 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-starter-model-google-genai</artifactId>
 		</dependency>
+	
 	</dependencies>
 
 	<build>

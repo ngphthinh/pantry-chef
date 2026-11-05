@@ -75,10 +75,6 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        // HIỆN KHÔNG CÓ CHỨC NĂNG BAN
-//        if (user.getUserStatus() == UserStatus.BANNED) {
-//            throw new AppException(ErrorCode.ACCOUNT_BANNED);
-//        }
         String refreshToken = jwtService.generateRefreshToken(user);
         log.info("User {} logged in", user.getEmail());
 
