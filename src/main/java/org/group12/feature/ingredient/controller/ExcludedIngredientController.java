@@ -21,28 +21,31 @@ public class ExcludedIngredientController {
 
     // GET /v1/users/me/excluded-ingredients
     @GetMapping
-    public ApiResponse<List<ExcludedIngredientResponse>> getMyExcludedIngredients() {
+    public ApiResponse<List<ExcludedIngredientResponse>> getMine() {
         return ApiResponse.<List<ExcludedIngredientResponse>>builder()
                 .code(IngredientResponseCode.EXCLUDED_LIST_SUCCESS.getCode())
                 .message(IngredientResponseCode.EXCLUDED_LIST_SUCCESS.getMessage())
-                .data(excludedIngredientService.getMyExcludedIngredients())
+                .data(excludedIngredientService.getMine())
                 .build();
     }
 
     // POST /v1/users/me/excluded-ingredients
     @PostMapping
-    public ApiResponse<ExcludedIngredientResponse> addExcludedIngredient(@Valid @RequestBody ExcludedIngredientCreateRequest request) {
+    public ApiResponse<ExcludedIngredientResponse> add(@Valid @RequestBody ExcludedIngredientCreateRequest request) {
         return ApiResponse.<ExcludedIngredientResponse>builder()
                 .code(IngredientResponseCode.EXCLUDED_CREATE_SUCCESS.getCode())
                 .message(IngredientResponseCode.EXCLUDED_CREATE_SUCCESS.getMessage())
-                .data(excludedIngredientService.addExcludedIngredient(request))
+                .data(excludedIngredientService.add(request))
                 .build();
     }
 
     // DELETE /v1/users/me/excluded-ingredients/{id}
     @DeleteMapping("/{id}")
-    @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
-    public void removeExcludedIngredient(@PathVariable("id") UUID id) {
-        excludedIngredientService.removeExcludedIngredient(id);
+    public ApiResponse<Void> remove(@PathVariable("id") UUID id) {
+        excludedIngredientService.remove(id);
+        return ApiResponse.<Void>builder()
+                .code(IngredientResponseCode.EXCLUDED_DELETE_SUCCESS.getCode())
+                .message(IngredientResponseCode.EXCLUDED_DELETE_SUCCESS.getMessage())
+                .build();
     }
 }

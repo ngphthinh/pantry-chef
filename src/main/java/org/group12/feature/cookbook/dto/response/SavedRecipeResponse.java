@@ -14,6 +14,7 @@ public class SavedRecipeResponse{
         private UUID id;
         private UUID recipeId;
         private String recipeTitle;
+        private String recipeImageUrl;
         private Integer rating;
         private String note;
         private boolean favorite;

@@ -1,0 +1,462 @@
+{
+  "roles": ["ROLE_ADMIN", "ROLE_USER"],
+  "syncStatuses": [
+    { "code": "PENDING", "name": "Chờ đồng bộ" },
+    { "code": "SYNCING", "name": "Đang đồng bộ" },
+    { "code": "SYNCED", "name": "Đã đồng bộ" },
+    { "code": "FAILED", "name": "Đồng bộ thất bại" },
+    { "code": "CONFLICT", "name": "Xung đột dữ liệu" }
+  ],
+  "cuisines": [
+    { "code": "VIETNAMESE", "name": "Món Việt" },
+    { "code": "ASIAN", "name": "Món Á" },
+    { "code": "WESTERN", "name": "Món Tây" },
+    { "code": "ITALIAN", "name": "Món Ý" },
+    { "code": "OTHER", "name": "Khác" }
+  ],
+  "ingredientCategories": [
+    { "code": "VEGETABLE", "name": "Rau củ", "sortOrder": 0 },
+    { "code": "FRUIT", "name": "Trái cây", "sortOrder": 0 },
+    { "code": "MEAT", "name": "Thịt", "sortOrder": 0 },
+    { "code": "SEAFOOD", "name": "Hải sản", "sortOrder": 0 },
+    { "code": "EGG", "name": "Trứng", "sortOrder": 0 },
+    { "code": "DAIRY", "name": "Sữa và chế phẩm từ sữa", "sortOrder": 0 },
+    { "code": "GRAIN", "name": "Gạo, bột, ngũ cốc", "sortOrder": 0 },
+    { "code": "LEGUME_NUT", "name": "Đậu và hạt", "sortOrder": 0 },
+    { "code": "SPICE_HERB", "name": "Gia vị và rau thơm", "sortOrder": 0 },
+    { "code": "SAUCE_CONDIMENT", "name": "Nước chấm và sốt", "sortOrder": 0 },
+    { "code": "OIL_FAT", "name": "Dầu mỡ", "sortOrder": 0 },
+    { "code": "CANNED_PROCESSED", "name": "Đồ hộp và thực phẩm chế biến sẵn", "sortOrder": 0 },
+    { "code": "BEVERAGE", "name": "Đồ uống", "sortOrder": 0 },
+    { "code": "OTHER", "name": "Khác", "sortOrder": 1 }
+  ],
+  "ingredients": [
+    { "name": "Cà chua", "defaultUnit": "PCS", "category": "VEGETABLE" },
+    { "name": "Hành tây", "defaultUnit": "PCS", "category": "VEGETABLE" },
+    { "name": "Cà rốt", "defaultUnit": "PCS", "category": "VEGETABLE" },
+    { "name": "Khoai tây", "defaultUnit": "G", "category": "VEGETABLE" },
+    { "name": "Rau muống", "defaultUnit": "G", "category": "VEGETABLE" },
+    { "name": "Cải thảo", "defaultUnit": "G", "category": "VEGETABLE" },
+    { "name": "Bông cải xanh", "defaultUnit": "G", "category": "VEGETABLE" },
+    { "name": "Dưa leo", "defaultUnit": "PCS", "category": "VEGETABLE" },
+    { "name": "Nấm rơm", "defaultUnit": "G", "category": "VEGETABLE" },
+    { "name": "Chuối", "defaultUnit": "PCS", "category": "FRUIT" },
+    { "name": "Chanh", "defaultUnit": "PCS", "category": "FRUIT" },
+    { "name": "Cam", "defaultUnit": "PCS", "category": "FRUIT" },
+    { "name": "Xoài", "defaultUnit": "PCS", "category": "FRUIT" },
+    { "name": "Dứa", "defaultUnit": "PCS", "category": "FRUIT" },
+    { "name": "Thịt ba chỉ", "defaultUnit": "G", "category": "MEAT" },
+    { "name": "Thịt bò", "defaultUnit": "G", "category": "MEAT" },
+    { "name": "Ức gà", "defaultUnit": "G", "category": "MEAT" },
+    { "name": "Sườn heo", "defaultUnit": "G", "category": "MEAT" },
+    { "name": "Thịt heo xay", "defaultUnit": "G", "category": "MEAT" },
+    { "name": "Tôm", "defaultUnit": "G", "category": "SEAFOOD" },
+    { "name": "Cá basa", "defaultUnit": "G", "category": "SEAFOOD" },
+    { "name": "Mực", "defaultUnit": "G", "category": "SEAFOOD" },
+    { "name": "Cá hồi", "defaultUnit": "G", "category": "SEAFOOD" },
+    { "name": "Trứng gà", "defaultUnit": "PCS", "category": "EGG" },
+    { "name": "Trứng vịt", "defaultUnit": "PCS", "category": "EGG" },
+    { "name": "Trứng cút", "defaultUnit": "PCS", "category": "EGG" },
+    { "name": "Sữa tươi", "defaultUnit": "ML", "barcode": "8934000000011", "category": "DAIRY" },
+    { "name": "Bơ", "defaultUnit": "G", "category": "DAIRY" },
+    { "name": "Phô mai", "defaultUnit": "G", "category": "DAIRY" },
+    { "name": "Sữa chua", "defaultUnit": "G", "category": "DAIRY" },
+    { "name": "Gạo", "defaultUnit": "G", "category": "GRAIN" },
+    { "name": "Bún tươi", "defaultUnit": "G", "category": "GRAIN" },
+    { "name": "Mì sợi", "defaultUnit": "G", "category": "GRAIN" },
+    { "name": "Bột mì", "defaultUnit": "G", "category": "GRAIN" },
+    { "name": "Bánh phở", "defaultUnit": "G", "category": "GRAIN" },
+    { "name": "Đậu hũ", "defaultUnit": "PCS", "category": "LEGUME_NUT" },
+    { "name": "Đậu phộng", "defaultUnit": "G", "category": "LEGUME_NUT" },
+    { "name": "Đậu xanh", "defaultUnit": "G", "category": "LEGUME_NUT" },
+    { "name": "Mè trắng", "defaultUnit": "G", "category": "LEGUME_NUT" },
+    { "name": "Tỏi", "defaultUnit": "G", "category": "SPICE_HERB" },
+    { "name": "Hành lá", "defaultUnit": "G", "category": "SPICE_HERB" },
+    { "name": "Sả", "defaultUnit": "PCS", "category": "SPICE_HERB" },
+    { "name": "Gừng", "defaultUnit": "G", "category": "SPICE_HERB" },
+    { "name": "Ớt", "defaultUnit": "PCS", "category": "SPICE_HERB" },
+    { "name": "Rau mùi", "defaultUnit": "G", "category": "SPICE_HERB" },
+    { "name": "Muối", "defaultUnit": "TSP", "category": "SPICE_HERB" },
+    { "name": "Đường", "defaultUnit": "TSP", "category": "SPICE_HERB" },
+    { "name": "Tiêu", "defaultUnit": "TSP", "category": "SPICE_HERB" },
+    { "name": "Nước mắm", "defaultUnit": "ML", "barcode": "8934000000028", "category": "SAUCE_CONDIMENT" },
+    { "name": "Nước tương", "defaultUnit": "ML", "category": "SAUCE_CONDIMENT" },
+    { "name": "Dầu hào", "defaultUnit": "ML", "category": "SAUCE_CONDIMENT" },
+    { "name": "Tương ớt", "defaultUnit": "ML", "barcode": "8934000000035", "category": "SAUCE_CONDIMENT" },
+    { "name": "Dầu ăn", "defaultUnit": "ML", "category": "OIL_FAT" },
+    { "name": "Dầu olive", "defaultUnit": "ML", "category": "OIL_FAT" },
+    { "name": "Mỡ heo", "defaultUnit": "G", "category": "OIL_FAT" },
+    { "name": "Cá hộp", "defaultUnit": "G", "category": "CANNED_PROCESSED" },
+    { "name": "Xúc xích", "defaultUnit": "PCS", "category": "CANNED_PROCESSED" },
+    { "name": "Ngô hộp", "defaultUnit": "G", "category": "CANNED_PROCESSED" },
+    { "name": "Nước dừa", "defaultUnit": "ML", "category": "BEVERAGE" },
+    { "name": "Cà phê", "defaultUnit": "G", "category": "BEVERAGE" },
+    { "name": "Trà", "defaultUnit": "G", "category": "BEVERAGE" },
+    { "name": "Men nở", "defaultUnit": "G", "category": "OTHER" }
+  ],
+  "users": [
+    { "email": "admin@gmail.com", "password": "Admin@123", "displayName": "Quản trị viên", "measurementSystem": "METRIC", "themeMode": "LIGHT", "roles": ["ROLE_ADMIN", "ROLE_USER"] },
+    { "email": "an.nguyen@example.com", "displayName": "Nguyễn Văn An", "measurementSystem": "METRIC", "themeMode": "LIGHT", "roles": ["ROLE_USER"] },
+    { "email": "binh.tran@example.com", "displayName": "Trần Thị Bình", "measurementSystem": "METRIC", "themeMode": "DARK", "roles": ["ROLE_USER"] },
+    { "email": "chi.le@example.com", "displayName": "Lê Minh Chi", "measurementSystem": "IMPERIAL", "themeMode": "LIGHT", "roles": ["ROLE_USER"] },
+    { "email": "dung.pham@example.com", "displayName": "Phạm Quốc Dũng", "measurementSystem": "METRIC", "themeMode": "DARK", "roles": ["ROLE_USER"] },
+    { "email": "hoa.vo@example.com", "displayName": "Võ Thanh Hoa", "measurementSystem": "IMPERIAL", "themeMode": "DARK", "roles": ["ROLE_USER"] }
+  ],
+  "excludedIngredients": [
+    { "userEmail": "admin@gmail.com", "name": "Tôm" },
+    { "userEmail": "admin@gmail.com", "name": "Đậu phộng" },
+    { "userEmail": "admin@gmail.com", "name": "Sữa tươi" },
+    { "userEmail": "an.nguyen@example.com", "name": "Mực" }
+  ],
+  "pantryItems": [
+    { "userEmail": "admin@gmail.com", "ingredient": "Trứng gà", "quantity": 10, "location": "FRIDGE", "expiryInDays": 14, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Cà chua", "quantity": 6, "location": "FRIDGE", "expiryInDays": 7, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Hành tây", "quantity": 3, "location": "PANTRY_SHELF", "expiryInDays": 21, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Thịt ba chỉ", "quantity": 500, "location": "FREEZER", "expiryInDays": 45, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Thịt bò", "quantity": 300, "location": "FRIDGE", "expiryInDays": 3, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Ức gà", "quantity": 400, "location": "FREEZER", "expiryInDays": 30, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Gạo", "quantity": 2000, "location": "PANTRY_SHELF", "expiryInDays": 180, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Rau muống", "quantity": 300, "location": "FRIDGE", "expiryInDays": 3, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Tỏi", "quantity": 100, "location": "PANTRY_SHELF", "expiryInDays": 30, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Hành lá", "quantity": 50, "location": "FRIDGE", "expiryInDays": 5, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Nước mắm", "quantity": 500, "location": "PANTRY_SHELF", "expiryInDays": 365, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Dầu ăn", "quantity": 1000, "location": "PANTRY_SHELF", "expiryInDays": 300, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Đường", "quantity": 20, "location": "PANTRY_SHELF", "expiryInDays": 365, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Đậu hũ", "quantity": 4, "location": "FRIDGE", "expiryInDays": 5, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Bánh phở", "quantity": 400, "location": "FRIDGE", "expiryInDays": 4, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "ingredient": "Gừng", "quantity": 50, "location": "PANTRY_SHELF", "expiryInDays": 14, "syncStatus": "SYNCED" },
+    { "userEmail": "an.nguyen@example.com", "ingredient": "Trứng gà", "quantity": 6, "location": "FRIDGE", "expiryInDays": 10, "syncStatus": "SYNCED" },
+    { "userEmail": "an.nguyen@example.com", "ingredient": "Gạo", "quantity": 1000, "location": "PANTRY_SHELF", "expiryInDays": 150, "syncStatus": "SYNCED" }
+  ],
+  "recipes": [
+    {
+      "externalId": "seed-trung-chien-hanh",
+      "title": "Trứng chiên hành",
+      "imageUrl": "https://picsum.photos/seed/recipe0/600/400",
+      "cuisine": "VIETNAMESE",
+      "servings": 2,
+      "readyInMinutes": 10,
+      "difficulty": "EASY",
+      "ingredients": [
+        { "name": "Trứng gà", "amount": 3, "unit": "PCS" },
+        { "name": "Hành lá", "amount": 20, "unit": "G" },
+        { "name": "Nước mắm", "amount": 5, "unit": "ML" },
+        { "name": "Tiêu", "amount": 0.25, "unit": "TSP" },
+        { "name": "Dầu ăn", "amount": 15, "unit": "ML" }
+      ],
+      "steps": [
+        { "text": "Rửa sạch hành lá, thái nhỏ.", "timerSeconds": null },
+        { "text": "Đập trứng vào tô, cho hành lá, nước mắm, tiêu vào rồi đánh tan đều.", "timerSeconds": null },
+        { "text": "Đun nóng dầu ăn trong chảo ở lửa vừa.", "timerSeconds": null },
+        { "text": "Đổ hỗn hợp trứng vào chảo, chiên đến khi mặt dưới vàng.", "timerSeconds": 120 },
+        { "text": "Lật mặt trứng, chiên thêm cho chín vàng đều.", "timerSeconds": 90 },
+        { "text": "Gắp ra đĩa và dùng nóng với cơm.", "timerSeconds": null }
+      ]
+    },
+    {
+      "externalId": "seed-rau-muong-xao-toi",
+      "title": "Rau muống xào tỏi",
+      "imageUrl": "https://picsum.photos/seed/recipe1/600/400",
+      "cuisine": "VIETNAMESE",
+      "servings": 2,
+      "readyInMinutes": 10,
+      "difficulty": "EASY",
+      "ingredients": [
+        { "name": "Rau muống", "amount": 300, "unit": "G" },
+        { "name": "Tỏi", "amount": 15, "unit": "G" },
+        { "name": "Dầu ăn", "amount": 20, "unit": "ML" },
+        { "name": "Nước mắm", "amount": 5, "unit": "ML" },
+        { "name": "Đường", "amount": 0.5, "unit": "TSP" },
+        { "name": "Tiêu", "amount": 0.25, "unit": "TSP" }
+      ],
+      "steps": [
+        { "text": "Nhặt bỏ lá già, ngắt rau muống thành khúc vừa ăn, rửa sạch và để ráo nước.", "timerSeconds": null },
+        { "text": "Bóc vỏ tỏi, đập dập và băm nhỏ.", "timerSeconds": null },
+        { "text": "Đun nóng dầu ăn trong chảo, phi thơm tỏi đến khi vàng nhẹ.", "timerSeconds": null },
+        { "text": "Cho rau muống vào, mở lửa lớn và đảo nhanh tay.", "timerSeconds": 120 },
+        { "text": "Nêm nước mắm, đường, tiêu, đảo đều thêm vài giây rồi tắt bếp.", "timerSeconds": null },
+        { "text": "Bày ra đĩa và dùng ngay khi rau còn xanh giòn.", "timerSeconds": null }
+      ]
+    },
+    {
+      "externalId": "seed-trung-xao-ca-chua",
+      "title": "Trứng xào cà chua",
+      "imageUrl": "https://picsum.photos/seed/recipe2/600/400",
+      "cuisine": "VIETNAMESE",
+      "servings": 2,
+      "readyInMinutes": 15,
+      "difficulty": "EASY",
+      "ingredients": [
+        { "name": "Trứng gà", "amount": 4, "unit": "PCS" },
+        { "name": "Cà chua", "amount": 3, "unit": "PCS" },
+        { "name": "Hành lá", "amount": 10, "unit": "G" },
+        { "name": "Đường", "amount": 1, "unit": "TSP" },
+        { "name": "Nước mắm", "amount": 10, "unit": "ML" },
+        { "name": "Dầu ăn", "amount": 20, "unit": "ML" }
+      ],
+      "steps": [
+        { "text": "Rửa cà chua, cắt múi cau. Hành lá rửa sạch, thái nhỏ.", "timerSeconds": null },
+        { "text": "Đánh tan trứng với một ít nước mắm.", "timerSeconds": null },
+        { "text": "Đun nóng dầu, đổ trứng vào xào đến khi vừa chín tới, múc ra đĩa.", "timerSeconds": 60 },
+        { "text": "Cho cà chua vào chảo, thêm đường, xào đến khi cà chua mềm ra nước.", "timerSeconds": 240 },
+        { "text": "Cho trứng trở lại chảo, đảo nhẹ tay cho hòa quyện, nêm nước mắm cho vừa ăn.", "timerSeconds": null },
+        { "text": "Rắc hành lá lên trên và dọn ra ăn nóng.", "timerSeconds": null }
+      ]
+    },
+    {
+      "externalId": "seed-dau-hu-sot-ca-chua",
+      "title": "Đậu hũ sốt cà chua",
+      "imageUrl": "https://picsum.photos/seed/recipe3/600/400",
+      "cuisine": "VIETNAMESE",
+      "servings": 3,
+      "readyInMinutes": 25,
+      "difficulty": "EASY",
+      "ingredients": [
+        { "name": "Đậu hũ", "amount": 4, "unit": "PCS" },
+        { "name": "Cà chua", "amount": 3, "unit": "PCS" },
+        { "name": "Hành lá", "amount": 15, "unit": "G" },
+        { "name": "Tỏi", "amount": 10, "unit": "G" },
+        { "name": "Nước mắm", "amount": 10, "unit": "ML" },
+        { "name": "Đường", "amount": 1, "unit": "TSP" },
+        { "name": "Muối", "amount": 0.5, "unit": "TSP" },
+        { "name": "Dầu ăn", "amount": 40, "unit": "ML" }
+      ],
+      "steps": [
+        { "text": "Cắt đậu hũ thành miếng vừa ăn, thấm khô, rắc chút muối. Cà chua cắt múi cau, tỏi băm, hành lá thái nhỏ.", "timerSeconds": null },
+        { "text": "Chiên đậu hũ trong dầu nóng đến khi vàng đều các mặt, vớt ra để ráo dầu.", "timerSeconds": 300 },
+        { "text": "Phi thơm tỏi với một ít dầu, cho cà chua vào xào đến khi mềm nhuyễn.", "timerSeconds": 300 },
+        { "text": "Thêm nước mắm, đường và chút nước, đun sôi nhẹ cho sốt sánh lại.", "timerSeconds": null },
+        { "text": "Cho đậu hũ vào, đun liu riu cho thấm sốt.", "timerSeconds": 300 },
+        { "text": "Rắc hành lá, tắt bếp và dùng nóng với cơm.", "timerSeconds": null }
+      ]
+    },
+    {
+      "externalId": "seed-bo-luc-lac",
+      "title": "Bò lúc lắc",
+      "imageUrl": "https://picsum.photos/seed/recipe4/600/400",
+      "cuisine": "VIETNAMESE",
+      "servings": 2,
+      "readyInMinutes": 25,
+      "difficulty": "MEDIUM",
+      "ingredients": [
+        { "name": "Thịt bò", "amount": 300, "unit": "G" },
+        { "name": "Hành tây", "amount": 1, "unit": "PCS" },
+        { "name": "Tỏi", "amount": 15, "unit": "G" },
+        { "name": "Dầu hào", "amount": 15, "unit": "ML" },
+        { "name": "Nước tương", "amount": 15, "unit": "ML" },
+        { "name": "Đường", "amount": 1, "unit": "TSP" },
+        { "name": "Tiêu", "amount": 0.5, "unit": "TSP" },
+        { "name": "Dầu ăn", "amount": 30, "unit": "ML" }
+      ],
+      "steps": [
+        { "text": "Cắt thịt bò thành hạt xúc xắc khoảng 2 cm. Hành tây cắt múi cau, tỏi băm nhỏ.", "timerSeconds": null },
+        { "text": "Ướp thịt bò với dầu hào, nước tương, đường, tiêu và một nửa số tỏi băm.", "timerSeconds": 900 },
+        { "text": "Đun chảo thật nóng với dầu ăn, phi thơm phần tỏi còn lại.", "timerSeconds": null },
+        { "text": "Cho bò vào chảo ở lửa lớn, lắc đều chảo để thịt săn và chín tới.", "timerSeconds": 90 },
+        { "text": "Cho hành tây vào đảo nhanh cho vừa chín, vẫn còn độ giòn.", "timerSeconds": 30 },
+        { "text": "Bày ra đĩa và dùng nóng ngay.", "timerSeconds": null }
+      ]
+    },
+    {
+      "externalId": "seed-ca-kho-to",
+      "title": "Cá kho tộ",
+      "imageUrl": "https://picsum.photos/seed/recipe5/600/400",
+      "cuisine": "VIETNAMESE",
+      "servings": 3,
+      "readyInMinutes": 45,
+      "difficulty": "MEDIUM",
+      "ingredients": [
+        { "name": "Cá basa", "amount": 400, "unit": "G" },
+        { "name": "Nước mắm", "amount": 30, "unit": "ML" },
+        { "name": "Đường", "amount": 2, "unit": "TSP" },
+        { "name": "Nước dừa", "amount": 150, "unit": "ML" },
+        { "name": "Tỏi", "amount": 10, "unit": "G" },
+        { "name": "Ớt", "amount": 1, "unit": "PCS" },
+        { "name": "Hành lá", "amount": 10, "unit": "G" },
+        { "name": "Tiêu", "amount": 0.5, "unit": "TSP" },
+        { "name": "Dầu ăn", "amount": 15, "unit": "ML" }
+      ],
+      "steps": [
+        { "text": "Cá cắt khúc dày khoảng 3 cm, rửa sạch và để ráo.", "timerSeconds": null },
+        { "text": "Ướp cá với nước mắm, tiêu và tỏi băm.", "timerSeconds": 900 },
+        { "text": "Cho đường và dầu ăn vào nồi đất, thắng đến khi có màu cánh gián.", "timerSeconds": null },
+        { "text": "Xếp cá vào nồi, đổ nước dừa và phần nước ướp, thêm ớt cắt lát.", "timerSeconds": null },
+        { "text": "Đun sôi rồi hạ lửa nhỏ, kho cho cá thấm và nước sánh lại.", "timerSeconds": 1500 },
+        { "text": "Nêm nếm lại, rắc hành lá và tiêu, dùng nóng với cơm trắng.", "timerSeconds": null }
+      ]
+    },
+    {
+      "externalId": "seed-ga-nuong-sa",
+      "title": "Gà nướng sả",
+      "imageUrl": "https://picsum.photos/seed/recipe6/600/400",
+      "cuisine": "VIETNAMESE",
+      "servings": 3,
+      "readyInMinutes": 60,
+      "difficulty": "MEDIUM",
+      "ingredients": [
+        { "name": "Ức gà", "amount": 500, "unit": "G" },
+        { "name": "Sả", "amount": 3, "unit": "PCS" },
+        { "name": "Tỏi", "amount": 15, "unit": "G" },
+        { "name": "Ớt", "amount": 1, "unit": "PCS" },
+        { "name": "Nước mắm", "amount": 20, "unit": "ML" },
+        { "name": "Đường", "amount": 1, "unit": "TSP" },
+        { "name": "Tiêu", "amount": 0.5, "unit": "TSP" },
+        { "name": "Dầu ăn", "amount": 15, "unit": "ML" }
+      ],
+      "steps": [
+        { "text": "Sả bóc bỏ lớp ngoài, bào nhỏ rồi băm nhuyễn. Tỏi và ớt băm nhỏ.", "timerSeconds": null },
+        { "text": "Rạch nhẹ mặt ức gà cho dễ thấm gia vị. Trộn sả, tỏi, ớt, nước mắm, đường, tiêu và dầu ăn thành hỗn hợp ướp.", "timerSeconds": null },
+        { "text": "Ướp gà với hỗn hợp trên, để trong tủ lạnh cho thấm.", "timerSeconds": 1800 },
+        { "text": "Làm nóng lò ở 200°C, xếp gà lên khay lót giấy bạc.", "timerSeconds": null },
+        { "text": "Nướng gà, lật mặt giữa chừng và phết thêm phần ướp còn lại.", "timerSeconds": 1500 },
+        { "text": "Để gà nghỉ vài phút rồi cắt lát, dọn ra dùng nóng.", "timerSeconds": 300 }
+      ]
+    },
+    {
+      "externalId": "seed-chao-ga",
+      "title": "Cháo gà",
+      "imageUrl": "https://picsum.photos/seed/recipe7/600/400",
+      "cuisine": "VIETNAMESE",
+      "servings": 3,
+      "readyInMinutes": 60,
+      "difficulty": "EASY",
+      "ingredients": [
+        { "name": "Gạo", "amount": 100, "unit": "G" },
+        { "name": "Ức gà", "amount": 250, "unit": "G" },
+        { "name": "Gừng", "amount": 10, "unit": "G" },
+        { "name": "Hành lá", "amount": 15, "unit": "G" },
+        { "name": "Rau mùi", "amount": 10, "unit": "G" },
+        { "name": "Nước mắm", "amount": 15, "unit": "ML" },
+        { "name": "Muối", "amount": 0.5, "unit": "TSP" },
+        { "name": "Tiêu", "amount": 0.5, "unit": "TSP" }
+      ],
+      "steps": [
+        { "text": "Vo gạo sạch, để ráo. Gừng đập dập, hành lá và rau mùi rửa sạch, thái nhỏ.", "timerSeconds": null },
+        { "text": "Luộc ức gà với gừng và một ít muối trong nồi nước đến khi chín, vớt gà ra, giữ lại nước luộc.", "timerSeconds": 900 },
+        { "text": "Xé gà thành sợi nhỏ.", "timerSeconds": null },
+        { "text": "Cho gạo vào nước luộc gà, nấu lửa nhỏ và khuấy đều tay cho cháo nhuyễn.", "timerSeconds": 2400 },
+        { "text": "Nêm nước mắm, muối cho vừa ăn.", "timerSeconds": null },
+        { "text": "Múc cháo ra tô, thêm thịt gà xé, hành lá, rau mùi và tiêu.", "timerSeconds": null }
+      ]
+    },
+    {
+      "externalId": "seed-thit-kho-tau",
+      "title": "Thịt kho tàu",
+      "imageUrl": "https://picsum.photos/seed/recipe8/600/400",
+      "cuisine": "VIETNAMESE",
+      "servings": 4,
+      "readyInMinutes": 120,
+      "difficulty": "MEDIUM",
+      "ingredients": [
+        { "name": "Thịt ba chỉ", "amount": 500, "unit": "G" },
+        { "name": "Trứng vịt", "amount": 4, "unit": "PCS" },
+        { "name": "Nước dừa", "amount": 400, "unit": "ML" },
+        { "name": "Nước mắm", "amount": 30, "unit": "ML" },
+        { "name": "Đường", "amount": 3, "unit": "TSP" },
+        { "name": "Tỏi", "amount": 10, "unit": "G" },
+        { "name": "Hành lá", "amount": 10, "unit": "G" },
+        { "name": "Tiêu", "amount": 0.5, "unit": "TSP" }
+      ],
+      "steps": [
+        { "text": "Luộc chín trứng vịt, ngâm nước lạnh rồi bóc vỏ.", "timerSeconds": 600 },
+        { "text": "Cắt thịt ba chỉ thành khối vuông khoảng 3 cm, chần sơ qua nước sôi rồi rửa sạch.", "timerSeconds": 180 },
+        { "text": "Ướp thịt với tỏi băm, nước mắm và tiêu.", "timerSeconds": 1200 },
+        { "text": "Thắng đường trong nồi đến khi có màu cánh gián, cho thịt vào đảo cho săn và lên màu.", "timerSeconds": null },
+        { "text": "Đổ nước dừa vào ngập thịt, đun sôi rồi hạ lửa nhỏ.", "timerSeconds": null },
+        { "text": "Cho trứng vào, kho liu riu đến khi thịt mềm và nước sánh.", "timerSeconds": 3600 },
+        { "text": "Nêm nếm lại, rắc hành lá và dùng với cơm nóng.", "timerSeconds": null }
+      ]
+    },
+    {
+      "externalId": "seed-pho-bo",
+      "title": "Phở bò",
+      "imageUrl": "https://picsum.photos/seed/recipe9/600/400",
+      "cuisine": "VIETNAMESE",
+      "servings": 4,
+      "readyInMinutes": 100,
+      "difficulty": "HARD",
+      "ingredients": [
+        { "name": "Thịt bò", "amount": 500, "unit": "G" },
+        { "name": "Bánh phở", "amount": 400, "unit": "G" },
+        { "name": "Hành tây", "amount": 1, "unit": "PCS" },
+        { "name": "Gừng", "amount": 30, "unit": "G" },
+        { "name": "Hành lá", "amount": 20, "unit": "G" },
+        { "name": "Rau mùi", "amount": 10, "unit": "G" },
+        { "name": "Nước mắm", "amount": 30, "unit": "ML" },
+        { "name": "Đường", "amount": 1, "unit": "TSP" },
+        { "name": "Muối", "amount": 1, "unit": "TSP" }
+      ],
+      "steps": [
+        { "text": "Nướng hành tây và gừng trên lửa đến khi cháy xém vỏ, thơm, rồi rửa sạch.", "timerSeconds": 600 },
+        { "text": "Chia thịt bò làm hai phần: phần lớn để hầm nước dùng, phần thăn thái lát mỏng để chần tái. Chần phần thịt hầm qua nước sôi rồi rửa sạch.", "timerSeconds": 180 },
+        { "text": "Cho thịt hầm, hành tây, gừng vào nồi nước, đun sôi rồi hạ lửa nhỏ, vớt bọt thường xuyên.", "timerSeconds": 3600 },
+        { "text": "Nêm nước mắm, muối, đường cho nước dùng đậm đà, lọc bỏ hành, gừng.", "timerSeconds": null },
+        { "text": "Chần bánh phở trong nước sôi cho mềm, cho vào tô.", "timerSeconds": 30 },
+        { "text": "Xếp thịt hầm đã thái và thịt thăn sống lên trên, chan nước dùng thật sôi.", "timerSeconds": null },
+        { "text": "Rắc hành lá, rau mùi thái nhỏ và dùng nóng.", "timerSeconds": null }
+      ]
+    }
+  ],
+  "mealPlans": [
+    {
+      "userEmail": "admin@gmail.com",
+      "weekOffset": 0,
+      "entries": [
+        { "dayOffset": 0, "mealType": "LUNCH", "recipeExternalId": "seed-thit-kho-tau", "servings": 4 },
+        { "dayOffset": 0, "mealType": "DINNER", "recipeExternalId": "seed-rau-muong-xao-toi", "servings": 2 },
+        { "dayOffset": 1, "mealType": "LUNCH", "recipeExternalId": "seed-ca-kho-to", "servings": 3 },
+        { "dayOffset": 1, "mealType": "DINNER", "recipeExternalId": "seed-trung-xao-ca-chua", "servings": 2 },
+        { "dayOffset": 2, "mealType": "LUNCH", "recipeExternalId": "seed-bo-luc-lac", "servings": 2 },
+        { "dayOffset": 2, "mealType": "DINNER", "recipeExternalId": "seed-dau-hu-sot-ca-chua", "servings": 3 },
+        { "dayOffset": 3, "mealType": "LUNCH", "recipeExternalId": "seed-ga-nuong-sa", "servings": 3 },
+        { "dayOffset": 3, "mealType": "DINNER", "recipeExternalId": "seed-trung-chien-hanh", "servings": 2 },
+        { "dayOffset": 4, "mealType": "LUNCH", "recipeExternalId": "seed-pho-bo", "servings": 4 },
+        { "dayOffset": 4, "mealType": "DINNER", "recipeExternalId": "seed-rau-muong-xao-toi", "servings": 2 },
+        { "dayOffset": 5, "mealType": "LUNCH", "recipeExternalId": "seed-thit-kho-tau", "servings": 4 },
+        { "dayOffset": 5, "mealType": "DINNER", "recipeExternalId": "seed-chao-ga", "servings": 3 },
+        { "dayOffset": 6, "mealType": "LUNCH", "recipeExternalId": "seed-ca-kho-to", "servings": 3 },
+        { "dayOffset": 6, "mealType": "DINNER", "recipeExternalId": "seed-bo-luc-lac", "servings": 2 }
+      ]
+    },
+    {
+      "userEmail": "admin@gmail.com",
+      "weekOffset": 1,
+      "entries": [
+        { "dayOffset": 0, "mealType": "LUNCH", "recipeExternalId": "seed-ga-nuong-sa", "servings": 3 },
+        { "dayOffset": 0, "mealType": "DINNER", "recipeExternalId": "seed-dau-hu-sot-ca-chua", "servings": 3 },
+        { "dayOffset": 1, "mealType": "LUNCH", "recipeExternalId": "seed-pho-bo", "servings": 4 },
+        { "dayOffset": 1, "mealType": "DINNER", "recipeExternalId": "seed-trung-chien-hanh", "servings": 2 },
+        { "dayOffset": 2, "mealType": "LUNCH", "recipeExternalId": "seed-thit-kho-tau", "servings": 4 },
+        { "dayOffset": 2, "mealType": "DINNER", "recipeExternalId": "seed-rau-muong-xao-toi", "servings": 2 }
+      ]
+    }
+  ],
+  "savedRecipes": [
+    { "userEmail": "admin@gmail.com", "recipeExternalId": "seed-pho-bo", "rating": 5, "note": "Cả nhà đều thích.", "favorite": true, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "recipeExternalId": "seed-thit-kho-tau", "rating": 5, "note": "Hợp để nấu cuối tuần.", "favorite": true, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "recipeExternalId": "seed-ca-kho-to", "rating": 4, "note": "Nêm ít muối hơn lần sau.", "favorite": false, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "recipeExternalId": "seed-bo-luc-lac", "rating": 4, "note": null, "favorite": false, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "recipeExternalId": "seed-ga-nuong-sa", "rating": 5, "note": "Nên ướp lâu hơn.", "favorite": true, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "recipeExternalId": "seed-chao-ga", "rating": 3, "note": null, "favorite": false, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "recipeExternalId": "seed-trung-xao-ca-chua", "rating": 4, "note": "Giảm đường một chút.", "favorite": false, "syncStatus": "SYNCED" },
+    { "userEmail": "admin@gmail.com", "recipeExternalId": "seed-dau-hu-sot-ca-chua", "rating": 4, "note": null, "favorite": false, "syncStatus": "SYNCED" }
+  ],
+  "collections": [
+    { "userEmail": "admin@gmail.com", "name": "Món yêu thích", "recipeExternalIds": ["seed-pho-bo", "seed-thit-kho-tau", "seed-ga-nuong-sa"] },
+    { "userEmail": "admin@gmail.com", "name": "Nấu nhanh ngày thường", "recipeExternalIds": ["seed-trung-xao-ca-chua", "seed-dau-hu-sot-ca-chua", "seed-bo-luc-lac"] },
+    { "userEmail": "admin@gmail.com", "name": "Cuối tuần", "recipeExternalIds": ["seed-thit-kho-tau", "seed-ca-kho-to", "seed-pho-bo"] },
+    { "userEmail": "admin@gmail.com", "name": "Tiệc gia đình", "recipeExternalIds": ["seed-pho-bo", "seed-ga-nuong-sa", "seed-ca-kho-to"] }
+  ],
+  "feedbacks": [
+    { "userEmail": "an.nguyen@example.com", "type": "BUG", "message": "Ứng dụng bị lỗi khi quét ảnh nguyên liệu.", "appVersion": "1.0.0", "deviceInfo": "Pixel 7 / Android 14" },
+    { "userEmail": "binh.tran@example.com", "type": "OTHER", "message": "Gợi ý thay thế nguyên liệu rất hữu ích.", "appVersion": "1.0.1", "deviceInfo": "Galaxy S23 / Android 14" },
+    { "userEmail": "chi.le@example.com", "type": "SUGGESTION", "message": "Mong muốn thêm chế độ tối cho màn hình công thức.", "appVersion": "1.0.1", "deviceInfo": "iPhone 14 / iOS 17" },
+    { "userEmail": "dung.pham@example.com", "type": "BUG", "message": "Không thể lưu thực đơn tuần, báo lỗi 500.", "appVersion": "1.1.0", "deviceInfo": "Redmi Note 12 / Android 13" },
+    { "userEmail": "hoa.vo@example.com", "type": "OTHER", "message": "Giao diện tủ nguyên liệu dễ dùng, cảm ơn nhóm.", "appVersion": "1.1.0", "deviceInfo": "iPhone 12 / iOS 16" },
+    { "userEmail": "an.nguyen@example.com", "type": "BUG", "message": "Thông báo hết hạn đến chậm vài giờ.", "appVersion": "1.2.0", "deviceInfo": "Pixel 7 / Android 14" },
+    { "userEmail": "binh.tran@example.com", "type": "SUGGESTION", "message": "Đề xuất thêm bộ lọc theo thời gian nấu.", "appVersion": "1.2.0", "deviceInfo": "Galaxy S23 / Android 14" },
+    { "userEmail": "chi.le@example.com", "type": "BUG", "message": "Ảnh món ăn tải rất lâu trên mạng 4G.", "appVersion": "1.0.0", "deviceInfo": "iPhone 14 / iOS 17" },
+    { "userEmail": "dung.pham@example.com", "type": "BUG", "message": "Nút yêu thích đôi khi không phản hồi.", "appVersion": "1.1.0", "deviceInfo": "Redmi Note 12 / Android 13" },
+    { "userEmail": "hoa.vo@example.com", "type": "OTHER", "message": "Công thức AI điều chỉnh khá chính xác.", "appVersion": "1.2.0", "deviceInfo": "iPhone 12 / iOS 16" }
+  ]
+}

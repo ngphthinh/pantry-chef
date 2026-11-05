@@ -33,6 +33,7 @@ public class AdaptRecipeService {
 
     private final ChatClient chatClient;
     private final PromptLoader promptLoader;
+    private final String template;
     private final ContentGuard contentGuard;
     private final RecipeRepository recipeRepository;
     private final ExcludedIngredientRepository excludedIngredientRepository;
@@ -58,6 +59,7 @@ public class AdaptRecipeService {
         this.excludedIngredientRepository = excludedIngredientRepository;
         this.adaptRecipeMapper = adaptRecipeMapper;
         this.tx = new TransactionTemplate(txManager);
+        this.template = promptLoader.load(promptPath);
         this.appUtil = appUtil;
         this.promptPath = promptPath;
     }
@@ -90,7 +92,6 @@ public class AdaptRecipeService {
                 .map(s -> s.getStepOrder() + ". " + s.getText())
                 .collect(Collectors.joining("\n"));
 
-        String template = promptLoader.load(promptPath);
         AiAdaptedRecipe adapted;
         try {
             adapted = chatClient.prompt()

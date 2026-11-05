@@ -36,6 +36,7 @@ public class AiRecipeIdeaService {
     private final ContentGuard contentGuard;
     private final PantryItemRepository pantryItemRepository;
     private final AppUtil appUtil;
+    private final String template;
     private final String promptPath;
     private final double minConfidence;
     private final int maxResults;
@@ -56,6 +57,7 @@ public class AiRecipeIdeaService {
         this.appUtil = appUtil;
         this.promptPath = promptPath;
         this.minConfidence = minConfidence;
+        this.template = promptLoader.load(promptPath);
         this.maxResults = maxResults;
     }
 
@@ -70,7 +72,6 @@ public class AiRecipeIdeaService {
 
         String cuisine = normalize(request.getCuisine());
         contentGuard.checkText(cuisine == null ? "" : cuisine);          // 422
-        String template = promptLoader.load(promptPath);
 
         List<RecipeIdeaResponse> result;
         try {

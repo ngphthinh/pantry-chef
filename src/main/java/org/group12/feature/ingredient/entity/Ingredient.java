@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.group12.common.entity.SoftDeletableEntity;
 import org.group12.common.enums.Unit;
-import org.group12.common.utils.TextUtil;
+import org.group12.feature.auth.entity.User;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -12,6 +12,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "ingredients")
+// Xóa mềm; gán barcode = NULL để mã vạch của bản ghi đã xóa không chặn việc thêm lại (cột barcode là unique)
 @SQLDelete(sql = "UPDATE ingredients SET deleted_at = now(), barcode = NULL WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 @Getter
@@ -33,4 +34,7 @@ public class Ingredient extends SoftDeletableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private IngredientCategory category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    private User owner;
 }

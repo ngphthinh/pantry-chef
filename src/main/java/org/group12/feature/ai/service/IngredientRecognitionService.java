@@ -25,6 +25,7 @@ public class IngredientRecognitionService {
     private final ChatClient chatClient;
     private final PromptLoader promptLoader;
     private final ContentGuard contentGuard;
+    private final String template;
     private final String promptPath;
     private final double minConfidence;
 
@@ -38,19 +39,19 @@ public class IngredientRecognitionService {
         this.promptLoader = promptLoader;
         this.contentGuard = contentGuard;
         this.promptPath = promptPath;
+        this.template = promptLoader.load(promptPath);
         this.minConfidence = minConfidence;
     }
 
     @PreAuthorize("hasRole('USER')")
     public List<RecognizedIngredientResponse> recognize(ImageUploadRequest request) {
         MultipartFile image = request.getImage();
-        String prompt = promptLoader.load(promptPath);
 
         List<RecognizedIngredientResponse> result;
         try {
             result = chatClient.prompt()
                     .system(contentGuard.systemPrompt())
-                    .user(u -> u.text(prompt)
+                    .user(u -> u.text(template)
                             .media(MimeTypeUtils.parseMimeType(Objects.requireNonNull(image.getContentType())), image.getResource()))
                     .call()
                     .entity(new ParameterizedTypeReference<>() {});

@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.group12.common.dto.response.ApiResponse;
 import org.group12.common.dto.response.CursorResponse;
+import org.group12.feature.pantry.dto.response.PantryItemResponse;
 import org.group12.feature.shopping.dto.request.ShoppingListCreateRequest;
 import org.group12.feature.shopping.dto.request.ShoppingListUpdateRequest;
 import org.group12.feature.shopping.dto.response.ShoppingListDetailResponse;
@@ -13,6 +14,7 @@ import org.group12.feature.shopping.service.ShoppingListService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -73,5 +75,37 @@ public class ShoppingListController {
     public void delete(@PathVariable UUID id) {
         shoppingListService.delete(id);
 
+    }
+
+    // POST /v1/shopping-lists/from-meal-plan/{mealPlanId}
+    @PostMapping("/from-meal-plan/{mealPlanId}")
+    @ResponseStatus(code = HttpStatus.CREATED)
+    public ApiResponse<ShoppingListDetailResponse> createFromMealPlan(@PathVariable UUID mealPlanId) {
+        return ApiResponse.<ShoppingListDetailResponse>builder()
+                .code(ShoppingResponseCode.SHOPPING_LIST_CREATED.getCode())
+                .message(ShoppingResponseCode.SHOPPING_LIST_CREATED.getMessage())
+                .data(shoppingListService.createFromMealPlan(mealPlanId))
+                .build();
+    }
+
+    // POST /v1/shopping-lists/from-recipe/{recipeId}
+    @PostMapping("/from-recipe/{recipeId}")
+    @ResponseStatus(code = HttpStatus.CREATED)
+    public ApiResponse<ShoppingListDetailResponse> createFromRecipe(@PathVariable UUID recipeId) {
+        return ApiResponse.<ShoppingListDetailResponse>builder()
+                .code(ShoppingResponseCode.SHOPPING_LIST_CREATED.getCode())
+                .message(ShoppingResponseCode.SHOPPING_LIST_CREATED.getMessage())
+                .data(shoppingListService.createFromRecipe(recipeId))
+                .build();
+    }
+
+    // POST /v1/shopping-lists/{id}/move-to-pantry
+    @PostMapping("/{id}/move-to-pantry")
+    public ApiResponse<List<PantryItemResponse>> moveToPantry(@PathVariable UUID id) {
+        return ApiResponse.<List<PantryItemResponse>>builder()
+                .code(ShoppingResponseCode.SHOPPING_ITEMS_MOVED_TO_PANTRY.getCode())
+                .message(ShoppingResponseCode.SHOPPING_ITEMS_MOVED_TO_PANTRY.getMessage())
+                .data(shoppingListService.moveBoughtToPantry(id))
+                .build();
     }
 }

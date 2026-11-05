@@ -51,7 +51,9 @@ public class SecurityConfig {
      */
     private static final String[] PUBLIC_ENDPOINTS_GET = {
             "/v1/cuisines",
-            "/v1/ingredient-categories"
+            "/v1/ingredient-categories",
+            "/v1/ingredients",
+            "/actuator/health"
     };
 
     private static final String[] PUBLIC_ENDPOINTS_HANDSHAKE = {

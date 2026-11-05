@@ -35,7 +35,7 @@ public class AiMealPlanService {
     private static final Set<MealType> ALLOWED_MEALS =
             EnumSet.of(MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER);
     private static final int MAX_CANDIDATES = 60;
-
+    private final String template;
     private final ChatClient chatClient;
     private final PromptLoader promptLoader;
     private final ContentGuard contentGuard;
@@ -67,6 +67,7 @@ public class AiMealPlanService {
         this.mealPlanMapper = mealPlanMapper;
         this.appUtil = appUtil;
         this.promptPath = promptPath;
+        this.template = promptLoader.load(promptPath);
         this.maxPantryItems = maxPantryItems;
     }
 
@@ -104,7 +105,6 @@ public class AiMealPlanService {
         String recipesText = candidates.values().stream()
                 .map(r -> r.getId() + " | " + r.getTitle() + " | " + r.getReadyInMinutes())
                 .collect(Collectors.joining("\n"));
-        String template = promptLoader.load(promptPath);
 
         AiMealPlanDraft draft;
         try {

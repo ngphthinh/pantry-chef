@@ -6,6 +6,7 @@ import org.group12.common.dto.response.ApiResponse;
 import org.group12.feature.cookbook.dto.request.CollectionCreateRequest;
 import org.group12.feature.cookbook.dto.request.CollectionUpdateRequest;
 import org.group12.feature.cookbook.dto.response.CollectionResponse;
+import org.group12.feature.cookbook.dto.response.CollectionResponseDetail;
 import org.group12.feature.cookbook.enums.CookbookResponseCode;
 import org.group12.feature.cookbook.service.CollectionService;
 import org.springframework.http.HttpStatus;
@@ -67,6 +68,14 @@ public class CollectionController {
                 .build();
     }
 
+    @GetMapping("/{id}")
+    public ApiResponse<CollectionResponseDetail> get(@PathVariable UUID id) {
+        return ApiResponse.<CollectionResponseDetail>builder()
+                .code(CookbookResponseCode.COLLECTION_GET_SUCCESS.getCode())
+                .message(CookbookResponseCode.COLLECTION_GET_SUCCESS.getMessage())
+                .data(service.get(id))
+                .build();
+    }
     @DeleteMapping("/{id}/recipes/{savedRecipeId}")
     public ApiResponse<CollectionResponse> removeRecipe(
             @PathVariable UUID id,
