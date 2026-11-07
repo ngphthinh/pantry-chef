@@ -12,7 +12,7 @@ target/
 .settings
 .springBeans
 .sts4-cache
-/src/main/**/ExportData.java
+ExportData.java
 data2.json
 ### IntelliJ IDEA ###
 .idea
