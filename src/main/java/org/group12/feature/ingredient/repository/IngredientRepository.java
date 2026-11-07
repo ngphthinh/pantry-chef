@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface IngredientRepository extends JpaRepository<Ingredient, UUID> {
-
+    boolean existsByBarcodeIn(Collection<String> barcodes);
     Optional<Ingredient> findByBarcode(String barcode);
 
     /** Tìm theo tên đã chuẩn hoá (cắt khoảng trắng, chữ thường). Sắp theo id để kết quả ổn định khi trùng tên. */

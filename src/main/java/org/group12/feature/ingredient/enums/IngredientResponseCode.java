@@ -14,6 +14,7 @@ public enum IngredientResponseCode implements ResponseCode {
     INGREDIENT_CREATE_SUCCESS("INGREDIENT_201", "Create ingredient successfully"),
     INGREDIENT_UPDATE_SUCCESS("INGREDIENT_200", "Update ingredient successfully"),
     INGREDIENT_DELETE_SUCCESS("INGREDIENT_200", "Delete ingredient successfully"),
+    INGREDIENT_BATCH_CREATE_SUCCESS("INGREDIENT_201", "Create ingredients in batch successfully"),
 
     CATEGORY_LIST_SUCCESS("INGREDIENT_CATEGORY_200", "Get ingredient categories successfully"),
     CATEGORY_CREATE_SUCCESS("INGREDIENT_CATEGORY_201", "Create ingredient category successfully"),

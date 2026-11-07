@@ -4,14 +4,17 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.group12.common.dto.response.ApiResponse;
 import org.group12.common.dto.response.CursorResponse;
+import org.group12.feature.ingredient.dto.request.IngredientBatchCreateRequest;
 import org.group12.feature.ingredient.dto.request.IngredientCreateRequest;
 import org.group12.feature.ingredient.dto.request.IngredientUpdateRequest;
 import org.group12.feature.ingredient.dto.response.IngredientResponse;
 import org.group12.feature.ingredient.enums.IngredientResponseCode;
 import org.group12.feature.ingredient.service.IngredientService;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -86,6 +89,17 @@ public class IngredientController {
         return ApiResponse.<Void>builder()
                 .code(IngredientResponseCode.INGREDIENT_DELETE_SUCCESS.getCode())
                 .message(IngredientResponseCode.INGREDIENT_DELETE_SUCCESS.getMessage())
+                .build();
+    }
+
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/batch")
+    public  ApiResponse<List<IngredientResponse>> createBatch(
+            @Valid @RequestBody IngredientBatchCreateRequest req) {
+        return ApiResponse.<List<IngredientResponse>>builder()
+                .code(IngredientResponseCode.INGREDIENT_BATCH_CREATE_SUCCESS.getCode())
+                .message(IngredientResponseCode.INGREDIENT_BATCH_CREATE_SUCCESS.getMessage())
+                .data(ingredientService.createIngredients(req))
                 .build();
     }
 }

@@ -43,6 +43,14 @@ public class SavedRecipeService {
         return "%" + escaped + "%";
     }
 
+    @Transactional(readOnly = true)
+    public SavedRecipeDetailResponse getByRecipeId(UUID recipeId){
+        UUID userId = appUtil.userIdFromAuthentication();
+
+        SavedRecipe savedRecipe = savedRecipeRepository.findByUserIdAndRecipeId(userId, recipeId).orElseThrow(SavedRecipeNotFoundException::new);
+        return mapper.toSavedRecipeDetailResponse(savedRecipe);
+    }
+
     @Transactional
     public SavedRecipeResponse save(SavedRecipeCreateRequest req) {
         UUID userId = appUtil.userIdFromAuthentication();

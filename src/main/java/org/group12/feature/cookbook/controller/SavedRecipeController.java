@@ -10,6 +10,7 @@ import org.group12.feature.cookbook.dto.request.SavedRecipeCreateRequest;
 import org.group12.feature.cookbook.dto.request.SavedRecipeUpdateRequest;
 import org.group12.feature.cookbook.dto.response.SavedRecipeDetailResponse;
 import org.group12.feature.cookbook.dto.response.SavedRecipeResponse;
+import org.group12.feature.cookbook.entity.SavedRecipe;
 import org.group12.feature.cookbook.enums.CookbookResponseCode;
 import org.group12.feature.cookbook.service.SavedRecipeService;
 import org.springframework.http.HttpStatus;
@@ -24,7 +25,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Validated
 public class SavedRecipeController {
-    private final SavedRecipeService service;
+    private final SavedRecipeService savedRecipeService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -33,10 +34,18 @@ public class SavedRecipeController {
         return ApiResponse.<SavedRecipeResponse>builder()
                 .code(CookbookResponseCode.SAVED_RECIPE_CREATE_SUCCESS.getCode())
                 .message(CookbookResponseCode.SAVED_RECIPE_CREATE_SUCCESS.getMessage())
-                .data(service.save(request))
+                .data(savedRecipeService.save(request))
                 .build();
     }
 
+    @GetMapping("/recipeId/{recipeId}")
+    public ApiResponse<SavedRecipeDetailResponse> getByRecipeId(@PathVariable UUID recipeId) {
+         return ApiResponse.<SavedRecipeDetailResponse>builder()
+                .code(CookbookResponseCode.SAVED_RECIPE_GET_SUCCESS.getCode())
+                .message(CookbookResponseCode.SAVED_RECIPE_GET_SUCCESS.getMessage())
+                .data(savedRecipeService.getByRecipeId(recipeId))
+                .build();
+    }
     @GetMapping
     public ApiResponse<CursorResponse<SavedRecipeResponse>> list(
             @RequestParam(required = false) UUID cursor,
@@ -50,7 +59,7 @@ public class SavedRecipeController {
         return ApiResponse.<CursorResponse<SavedRecipeResponse>>builder()
                 .code(CookbookResponseCode.SAVED_RECIPE_LIST_SUCCESS.getCode())
                 .message(CookbookResponseCode.SAVED_RECIPE_LIST_SUCCESS.getMessage())
-                .data(service.list(cursor, size, favorite, collectionId, keyword, minRating, sort))
+                .data(savedRecipeService.list(cursor, size, favorite, collectionId, keyword, minRating, sort))
                 .build();
     }
 
@@ -59,14 +68,14 @@ public class SavedRecipeController {
         return ApiResponse.<SavedRecipeDetailResponse>builder()
                 .code(CookbookResponseCode.SAVED_RECIPE_GET_SUCCESS.getCode())
                 .message(CookbookResponseCode.SAVED_RECIPE_GET_SUCCESS.getMessage())
-                .data(service.getDetail(id))
+                .data(savedRecipeService.getDetail(id))
                 .build();
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {
-        service.delete(id);
+        savedRecipeService.delete(id);
     }
 
     @PatchMapping("/{id}")
@@ -76,7 +85,7 @@ public class SavedRecipeController {
         return ApiResponse.<SavedRecipeResponse>builder()
                 .code(CookbookResponseCode.SAVED_RECIPE_UPDATE_SUCCESS.getCode())
                 .message(CookbookResponseCode.SAVED_RECIPE_UPDATE_SUCCESS.getMessage())
-                .data(service.update(id, request))
+                .data(savedRecipeService.update(id, request))
                 .build();
     }
 }

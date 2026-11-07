@@ -1,12 +1,14 @@
 package org.group12.feature.ingredient.service;
 
 import jakarta.persistence.EntityManager;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.group12.feature.auth.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.group12.common.dto.response.CursorResponse;
 import org.group12.common.utils.AppUtil;
 import org.group12.common.utils.TextUtil;
+import org.group12.feature.ingredient.dto.request.IngredientBatchCreateRequest;
 import org.group12.feature.ingredient.dto.request.IngredientCreateRequest;
 import org.group12.feature.ingredient.dto.request.IngredientUpdateRequest;
 import org.group12.feature.ingredient.dto.response.IngredientResponse;
@@ -25,8 +27,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -160,5 +161,46 @@ public class IngredientService {
         return value.replace("!", "!!")
                 .replace("%", "!%")
                 .replace("_", "!_");
+    }
+
+    // Service
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @Transactional
+    public List<IngredientResponse> createIngredients(IngredientBatchCreateRequest request) {
+        UUID userId = appUtil.userIdFromAuthentication();
+        boolean admin = isAdmin();
+        List<IngredientCreateRequest> items = request.getItems();
+
+        // 1) Barcode: trùng trong chính lô, hoặc đã tồn tại trong DB -> 409 (rollback cả lô)
+        List<String> barcodes = items.stream()
+                .map(IngredientCreateRequest::getBarcode)
+                .filter(Objects::nonNull)
+                .toList();
+        if (barcodes.size() != new HashSet<>(barcodes).size()
+                || (!barcodes.isEmpty() && ingredientRepository.existsByBarcodeIn(barcodes))) {
+            throw new IngredientBarcodeDuplicateException();
+        }
+
+        // 2) Mỗi category chỉ tra 1 lần dù nhiều món dùng chung
+        Map<UUID, IngredientCategory> categories = new HashMap<>();
+        User owner = admin ? null : entityManager.getReference(User.class, userId);
+
+        // 3) Build theo đúng thứ tự đầu vào
+        List<Ingredient> entities = items.stream()
+                .map(item -> Ingredient.builder()
+                        .id(appUtil.generateUUID())
+                        .name(item.getName().trim())
+                        .defaultUnit(item.getDefaultUnit())
+                        .barcode(item.getBarcode())
+                        .category(categories.computeIfAbsent(
+                                item.getCategoryId(), id -> findCategory(id, userId)))
+                        .owner(owner)
+                        .build())
+                .toList();
+
+        // saveAll trả list cùng thứ tự -> FE map theo index
+        return ingredientRepository.saveAll(entities).stream()
+                .map(ingredientMapper::toIngredientResponse)
+                .toList();
     }
 }
