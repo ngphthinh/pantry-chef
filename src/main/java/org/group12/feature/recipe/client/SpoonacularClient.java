@@ -128,7 +128,7 @@ public class SpoonacularClient implements RecipeProviderClient {
 
         SearchItem[] items = get(BY_INGREDIENTS_PATH, Map.of(), query, SearchItem[].class);
         return Arrays.stream(items)
-                .filter(item -> item.id() != null)
+                .filter(item -> item.getId() != null)
                 .map(this::toSummary)
                 .toList();
     }
